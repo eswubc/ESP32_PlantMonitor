@@ -865,6 +865,7 @@ void taskFirebaseSync(void *pv) {
         if (!isnan(s.humidity))     hj.set("h", s.humidity);
         hj.set("s", s.soilRaw);
         hj.set("l", s.lightBright ? 1 : 0);
+        hj.set("pu", s.pumpRunning ? 1 : 0);
         Firebase.RTDB.setJSON(&fbClient, histPath.c_str(), &hj);
       }
 
