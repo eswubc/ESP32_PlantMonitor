@@ -806,7 +806,8 @@ void taskFirebaseSync(void *pv) {
         json.set("humidity", s.humidity);
       }
       json.set("soilRaw", s.soilRaw);
-      json.set("lightBright", s.lightBright);
+      if (!isnan(s.lux)) json.set("lux", s.lux);
+      json.set("tk",          s.tankEmpty  ? 1 : 0);
       json.set("pumpRunning", s.pumpRunning);
       json.set("health", healthStatus(s));
       json.set("timestamp", (int)time(nullptr));
@@ -830,9 +831,9 @@ void taskFirebaseSync(void *pv) {
         syncCount++;
         firstPushDone = true;
         if (syncCount <= 5 || syncCount % 20 == 0) {
-          Serial.printf("[Sync] Push #%lu OK | temp=%.1f pres=%.0f hum=%.1f soil=%u light=%d ts=%d\n",
+          Serial.printf("[Sync] Push #%lu OK | temp=%.1f pres=%.0f hum=%.1f soil=%u lux=%.1f tank=%d ts=%d\n",
             syncCount, s.temperatureC, s.pressurePa, s.humidity,
-            s.soilRaw, s.lightBright, (int)time(nullptr));
+            s.soilRaw, s.lux, s.tankEmpty ? 1 : 0, (int)time(nullptr));
         }
       }
       // So the app can list "available" devices and show online status
@@ -878,8 +879,9 @@ void taskFirebaseSync(void *pv) {
         if (!isnan(s.pressurePa))   hj.set("p", s.pressurePa);
         if (!isnan(s.humidity))     hj.set("h", s.humidity);
         hj.set("s", s.soilRaw);
-        hj.set("l", s.lightBright ? 1 : 0);
+        if (!isnan(s.lux)) hj.set("l", s.lux);  // float lux value
         hj.set("pu", s.pumpRunning ? 1 : 0);
+        hj.set("tk", s.tankEmpty   ? 1 : 0);
         Firebase.RTDB.setJSON(&fbClient, histPath.c_str(), &hj);
       }
 
@@ -1121,6 +1123,29 @@ void taskPumpControl(void *pv) {
     if (xSemaphoreTake(gStateMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
       s = gState;
       xSemaphoreGive(gStateMutex);
+    }
+
+    // Tank empty guard: refuse to run pump if water tank is empty
+    if (s.tankEmpty) {
+      updateRelay(false);
+      gPumpRequest = false;
+      // Alert (debounced to once per hour)
+      static int lastTankAlertTs = 0;
+      int nowTs = (int)time(nullptr);
+      if (nowTs - lastTankAlertTs > 3600) {
+        lastTankAlertTs = nowTs;
+        String alertPath = "devices/" + deviceId + "/alerts/lastAlert";
+        FirebaseJson alertJson;
+        alertJson.set("timestamp", nowTs);
+        alertJson.set("type", "tank_empty");
+        alertJson.set("message", "Water tank empty — refill needed");
+        if (xSemaphoreTake(gFirebaseMutex, pdMS_TO_TICKS(500)) == pdTRUE) {
+          Firebase.RTDB.updateNode(&fbClient, alertPath.c_str(), &alertJson);
+          xSemaphoreGive(gFirebaseMutex);
+        }
+      }
+      vTaskDelay(PUMP_IDLE_MS);
+      continue;
     }
 
     if (s.soilRaw <= target) {
