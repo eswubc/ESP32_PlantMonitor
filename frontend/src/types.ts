@@ -59,3 +59,13 @@ export type WateringSchedule = {
   todaySeconds?: number
   lastWateredAt?: number
 }
+
+export interface HistoryRow {
+  epoch: number       // Unix UTC epoch (the Firebase key, parsed to number)
+  t: number           // temperature °C
+  p: number           // pressure Pa (raw from Firebase)
+  h: number | null    // humidity % (null if BMP280 / missing)
+  s: number           // soil raw ADC 0–4095
+  l: number           // light: 1=bright, 0=dim
+  pu: number          // pump: 1=on, 0=off (0 if missing in old records)
+}

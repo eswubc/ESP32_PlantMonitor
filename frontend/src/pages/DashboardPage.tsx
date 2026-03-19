@@ -25,6 +25,7 @@ import { sanitizeString, sanitizeEmail, sanitizeInt, sanitizeNumber } from '../u
 import { useRateLimit } from '../hooks/useRateLimit'
 import { RotatingText } from '../components/ui/rotating-text'
 import ScrollStack, { ScrollStackItem } from '../components/ui/ScrollStack'
+import ExportModal from '../components/dashboard/ExportModal'
 
 export type DashboardTab = 'dashboard' | 'settings'
 
@@ -100,6 +101,7 @@ export function DashboardPage() {
     typeof window !== 'undefined' && localStorage.getItem('notif_enabled') === 'true'
   )
   const [activeTab, setActiveTab] = useState<DashboardTab>('dashboard')
+  const [exportModalOpen, setExportModalOpen] = useState(false)
   const lastNotifiedAtRef = useRef(0)
   const prevStatusRef = useRef<DeviceStatus>('no_data')
   const appUrl = typeof window !== 'undefined' ? window.location.origin : ''
@@ -557,6 +559,7 @@ export function DashboardPage() {
 
   // ── Render ──
   return (
+    <>
     <div className="min-h-screen p-4 pb-8 md:p-6 lg:p-8">
       <div className="mx-auto max-w-4xl">
         {/* Floating header — Dashboard, Settings, Theme, Add device, Sign out */}
@@ -777,6 +780,16 @@ export function DashboardPage() {
                   {pumpActive ? 'Running…' : pumpCooldown || !canWater ? 'Sent ✓' : 'Water now'}
                 </button>
               </motion.div>
+
+              <button
+                onClick={() => setExportModalOpen(true)}
+                className="flex items-center gap-2 rounded-xl border border-zinc-300 dark:border-zinc-600 px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Export Data
+              </button>
 
               {showProTip && (
                 <div className="mt-3 rounded-2xl border border-amber-200/50 bg-amber-50/60 p-3">
@@ -1123,5 +1136,13 @@ export function DashboardPage() {
         )}
       </div>
     </div>
+
+    {exportModalOpen && selectedMac && (
+      <ExportModal
+        mac={selectedMac}
+        onClose={() => setExportModalOpen(false)}
+      />
+    )}
+    </>
   )
 }

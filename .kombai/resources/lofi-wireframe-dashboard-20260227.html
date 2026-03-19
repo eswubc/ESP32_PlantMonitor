@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wireframe — Smart Plant Pro Dashboard (Apple-inspired Redesign)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Comic Sans MS', 'Chalkboard SE', 'Segoe Print', cursive;
+      background: #f5f5f5;
+      color: #111;
+      min-height: 100vh;
+    }
+
+    /* ── Frame container ── */
+    .frame-outer {
+      max-width: 420px;
+      margin: 32px auto;
+      background: #fff;
+      border: 3px solid #333;
+      border-radius: 36px;
+      overflow: hidden;
+      box-shadow: 6px 8px 0 #bbb;
+      position: relative;
+    }
+
+    /* ── Page title strip ── */
+    .page-label {
+      background: #333;
+      color: #fff;
+      text-align: center;
+      padding: 8px 12px;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Inline badge system ── */
+    .reuse-badge {
+      display: inline-block;
+      background: #4CAF50;
+      color: #fff;
+      font-size: 9px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      padding: 2px 5px;
+      border-radius: 3px;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+    .new-badge {
+      display: inline-block;
+      background: #FF9800;
+      color: #fff;
+      font-size: 9px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      padding: 2px 5px;
+      border-radius: 3px;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+    .abs-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      z-index: 20;
+    }
+
+    /* ── Status bar (phone chrome) ── */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px 6px;
+      font-size: 11px;
+      font-family: Arial, sans-serif;
+      color: #555;
+    }
+
+    /* ── Layout blocks ── */
+    .content {
+      padding: 0 14px 100px;
+    }
+
+    /* ── Header ── */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px 12px;
+      border-bottom: 1.5px dashed #ccc;
+      position: relative;
+    }
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      border: 2px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      background: #eee;
+      flex-shrink: 0;
+    }
+    .app-title {
+      font-size: 15px;
+      font-weight: bold;
+    }
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid #999;
+      background: #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #555;
+    }
+
+    /* ── Device selector pill ── */
+    .device-pill-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 0 6px;
+    }
+    .device-pill {
+      flex: 1;
+      border: 1.5px solid #aaa;
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f9f9f9;
+    }
+    .device-pill-status {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      color: #666;
+    }
+    .dot-green {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #888;
+      border: 1px solid #555;
+    }
+    .device-pill-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .icon-btn {
+      width: 30px;
+      height: 30px;
+      border: 1.5px solid #bbb;
+      border-radius: 8px;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* ── Plant Hero card ── */
+    .plant-hero-card {
+      border: 2px solid #333;
+      border-radius: 20px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      background: #fdfdfd;
+      position: relative;
+    }
+    .plant-hero-inner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .plant-avatar {
+      width: 52px;
+      height: 52px;
+      border: 2px solid #999;
+      border-radius: 16px;
+      background: #efefef;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .plant-info { flex: 1; min-width: 0; }
+    .plant-name {
+      font-size: 16px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .plant-type { font-size: 11px; color: #888; margin-top: 2px; }
+    .health-badge {
+      border: 2px solid #888;
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: bold;
+      background: #eee;
+      white-space: nowrap;
+    }
+    .quick-stats-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #ddd;
+    }
+    .quick-stat-chip {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 3px 8px;
+      font-size: 10px;
+      background: #f5f5f5;
+    }
+
+    /* ── Gauge section ── */
+    .gauge-section {
+      border: 2px solid #333;
+      border-radius: 20px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      background: #fdfdfd;
+      position: relative;
+      text-align: center;
+    }
+    .section-eyebrow {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #888;
+      margin-bottom: 10px;
+      font-family: Arial, sans-serif;
+    }
+    .gauge-circle {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      border: 10px solid #ccc;
+      border-top-color: #555;
+      border-right-color: #888;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 8px;
+    }
+    .gauge-value {
+      font-size: 28px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .gauge-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #777;
+      font-family: Arial, sans-serif;
+    }
+
+    /* ── Sensor grid ── */
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .sensor-card {
+      border: 2px solid #bbb;
+      border-radius: 16px;
+      padding: 12px;
+      background: #fdfdfd;
+      position: relative;
+    }
+    .sensor-icon {
+      width: 32px;
+      height: 32px;
+      border: 1.5px solid #bbb;
+      border-radius: 10px;
+      background: #eee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .sensor-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #888;
+      font-family: Arial, sans-serif;
+      margin-bottom: 3px;
+    }
+    .sensor-value {
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .sensor-unit {
+      font-size: 12px;
+      color: #777;
+      margin-left: 2px;
+    }
+
+    /* ── Action row ── */
+    .action-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .btn-primary-wire {
+      flex: 1;
+      border: 2px solid #333;
+      border-radius: 14px;
+      padding: 12px;
+      background: #333;
+      color: #fff;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: bold;
+      text-align: center;
+      cursor: pointer;
+    }
+    .btn-secondary-wire {
+      flex: 1;
+      border: 2px solid #888;
+      border-radius: 14px;
+      padding: 12px;
+      background: #f5f5f5;
+      color: #333;
+      font-size: 13px;
+      font-family: inherit;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    /* ── Status banners ── */
+    .status-banner {
+      border: 2px dashed #aaa;
+      border-radius: 14px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      background: #fafafa;
+      position: relative;
+    }
+    .banner-icon {
+      width: 24px;
+      height: 24px;
+      border: 1.5px solid #bbb;
+      border-radius: 50%;
+      background: #eee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    /* ── Notification toggle ── */
+    .notif-row {
+      border: 1.5px dashed #ccc;
+      border-radius: 12px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 11px;
+      background: #fafafa;
+      position: relative;
+    }
+    .toggle-wire {
+      width: 36px;
+      height: 20px;
+      border: 2px solid #999;
+      border-radius: 10px;
+      background: #eee;
+      margin-left: auto;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .toggle-knob {
+      width: 14px;
+      height: 14px;
+      background: #ccc;
+      border-radius: 50%;
+      position: absolute;
+      top: 1px;
+      left: 2px;
+      border: 1px solid #999;
+    }
+
+    /* ── Section card (collapsible-style) ── */
+    .collapsible-card {
+      border: 2px solid #ccc;
+      border-radius: 16px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      background: #fdfdfd;
+      position: relative;
+    }
+    .collapsible-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .collapsible-title {
+      font-size: 13px;
+      font-weight: bold;
+    }
+    .collapsible-subtitle {
+      font-size: 10px;
+      color: #888;
+      margin-top: 2px;
+    }
+    .chevron {
+      font-size: 14px;
+      color: #888;
+    }
+    .collapsible-body {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #ddd;
+      font-size: 11px;
+      color: #555;
+    }
+
+    /* ── History chart placeholder ── */
+    .chart-card {
+      border: 2px solid #ccc;
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 12px;
+      background: #fdfdfd;
+      position: relative;
+    }
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .chart-placeholder {
+      width: 100%;
+      height: 100px;
+      background: repeating-linear-gradient(
+        90deg,
+        #f0f0f0 0px,
+        #f0f0f0 1px,
+        transparent 1px,
+        transparent 30px
+      ),
+      repeating-linear-gradient(
+        0deg,
+        #f0f0f0 0px,
+        #f0f0f0 1px,
+        transparent 1px,
+        transparent 25px
+      );
+      border: 1px dashed #ccc;
+      border-radius: 8px;
+      display: flex;
+      align-items: flex-end;
+      padding: 8px;
+      gap: 2px;
+      overflow: hidden;
+    }
+    .chart-bar {
+      flex: 1;
+      background: #bbb;
+      border-radius: 2px;
+      opacity: 0.6;
+    }
+    .range-tabs {
+      display: flex;
+      background: #eee;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .range-tab {
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: 10px;
+      font-family: Arial, sans-serif;
+    }
+    .range-tab.active {
+      background: #fff;
+      border: 1px solid #ccc;
+      font-weight: bold;
+    }
+
+    /* ── Bottom tab bar ── */
+    .tab-bar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 420px;
+      display: flex;
+      border-top: 2px solid #ccc;
+      background: rgba(255,255,255,0.97);
+      padding: 8px 0 16px;
+      z-index: 100;
+    }
+    .tab-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      padding: 4px 0;
+    }
+    .tab-icon {
+      font-size: 20px;
+    }
+    .tab-label {
+      font-size: 9px;
+      font-family: Arial, sans-serif;
+      letter-spacing: 0.03em;
+    }
+    .tab-item.active .tab-label { font-weight: bold; }
+    .tab-item.active .tab-icon { opacity: 1; }
+    .tab-item .tab-icon { opacity: 0.35; }
+
+    /* ── Settings tab content ── */
+    .settings-section { display: none; }
+    .settings-section.visible { display: block; padding: 0; }
+    .dashboard-section { display: block; }
+
+    /* ── Form elements ── */
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .slider-wire {
+      flex: 1;
+      height: 6px;
+      background: repeating-linear-gradient(90deg, #ddd 0%, #aaa 50%, #ddd 100%);
+      border-radius: 3px;
+      border: 1px solid #bbb;
+      position: relative;
+    }
+    .slider-thumb {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #555;
+      border-radius: 50%;
+      background: #fff;
+      position: absolute;
+      top: -6px;
+      left: 60%;
+    }
+    .slider-value {
+      font-size: 16px;
+      font-weight: bold;
+      width: 50px;
+      text-align: right;
+    }
+
+    /* ── Input wire ── */
+    .input-wire {
+      border: 1.5px solid #bbb;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-family: inherit;
+      background: #f9f9f9;
+      width: 100%;
+      display: block;
+    }
+
+    /* ── Table wire ── */
+    .table-wire {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+      margin-top: 8px;
+    }
+    .table-wire th {
+      text-align: left;
+      padding: 5px 6px;
+      border-bottom: 2px solid #ccc;
+      font-family: Arial, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 9px;
+      color: #666;
+    }
+    .table-wire td {
+      padding: 6px 6px;
+      border-bottom: 1px dashed #e5e5e5;
+      color: #444;
+    }
+
+    /* ── Section label ── */
+    .section-h {
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      padding: 0 2px;
+      color: #333;
+    }
+
+    /* ── Annotations ── */
+    .annotation {
+      background: #fffbcc;
+      border: 1.5px dashed #bba;
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 10px;
+      font-family: Arial, sans-serif;
+      color: #554400;
+      margin: 6px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 5px;
+    }
+    .annotation-arrow { font-size: 12px; flex-shrink: 0; }
+
+    /* ── Redesign legend ── */
+    .legend {
+      max-width: 420px;
+      margin: 24px auto;
+      padding: 16px;
+      border: 2px dashed #999;
+      border-radius: 12px;
+      background: #fff;
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+    }
+    .legend h2 { font-size: 14px; margin-bottom: 10px; }
+    .legend ul { padding-left: 18px; line-height: 1.8; }
+    .badge-demo {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin: 4px 0;
+    }
+
+    /* ── Claim page layout ── */
+    .claim-frame {
+      max-width: 420px;
+      margin: 32px auto;
+      background: #fff;
+      border: 3px solid #333;
+      border-radius: 36px;
+      overflow: hidden;
+      box-shadow: 6px 8px 0 #bbb;
+    }
+
+    /* ── Device list item ── */
+    .device-list-item {
+      border: 1.5px solid #ccc;
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+    .mac-text {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #333;
+    }
+
+    /* ── Confirm dialog ── */
+    .confirm-dialog {
+      border: 2px solid #555;
+      border-radius: 16px;
+      padding: 16px;
+      background: #fff;
+      margin-bottom: 12px;
+      position: relative;
+    }
+    .confirm-title { font-size: 14px; font-weight: bold; margin-bottom: 6px; }
+    .confirm-body { font-size: 11px; color: #666; margin-bottom: 12px; }
+    .confirm-btns { display: flex; gap: 8px; }
+    .btn-cancel-wire { flex: 1; border: 1.5px solid #bbb; border-radius: 10px; padding: 8px; font-size: 11px; text-align: center; background: #f5f5f5; font-family: inherit; }
+    .btn-danger-wire { flex: 1; border: 2px solid #555; border-radius: 10px; padding: 8px; font-size: 11px; text-align: center; background: #eee; font-weight: bold; font-family: inherit; }
+
+    /* ── Page title ── */
+    .wireframe-title {
+      max-width: 420px;
+      margin: 0 auto 8px;
+      font-family: Arial, sans-serif;
+      font-size: 17px;
+      font-weight: bold;
+      color: #222;
+      padding: 0 4px;
+    }
+    .wireframe-subtitle {
+      max-width: 420px;
+      margin: 0 auto 16px;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      color: #666;
+      padding: 0 4px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--           WIREFRAME REDESIGN — Smart Plant Pro         -->
+<!--       Apple-inspired Minimalist Dashboard Layout       -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<div style="padding: 24px 16px;">
+
+  <!-- Title -->
+  <div class="wireframe-title">Smart Plant Pro — Apple-inspired Redesign Wireframe</div>
+  <div class="wireframe-subtitle">Key changes: Bottom tab bar separates Settings from main view · Cleaner header · Larger primary metrics · Confirmation dialogs for destructive actions</div>
+
+  <!-- Component legend -->
+  <div class="legend" style="margin-bottom: 24px;">
+    <h2>Component Key</h2>
+    <div class="badge-demo"><span style="background:#4CAF50;color:#fff;font-size:9px;font-weight:bold;padding:2px 5px;border-radius:3px;">[REUSE]</span> Existing component reused</div>
+    <div class="badge-demo"><span style="background:#FF9800;color:#fff;font-size:9px;font-weight:bold;padding:2px 5px;border-radius:3px;">[NEW]</span> New component to be created</div>
+    <div class="badge-demo"><span style="background:#fffbcc;border:1.5px dashed #bba;font-size:9px;padding:2px 5px;border-radius:3px;">📝</span> Design annotation</div>
+  </div>
+
+  <!-- ────────────────────────── SCREEN 1: Dashboard ────────────────────────── -->
+  <div class="wireframe-title" style="margin-top: 20px;">Screen 1 — Dashboard Tab (main)</div>
+
+  <div class="frame-outer">
+    <div class="page-label">Smart Plant Pro — Dashboard Tab</div>
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span>9:41 AM</span>
+      <span>●●●●</span>
+    </div>
+
+    <!-- ── App Header ── -->
+    <!-- REUSABLE: Rebuilt from DashboardPage.tsx header (lines 494–521) -->
+    <div class="app-header" style="position:relative;">
+      <span class="abs-badge new-badge">[NEW] AppHeader</span>
+      <div class="logo-row">
+        <div class="logo-mark">🌿</div>
+        <div>
+          <div class="app-title">Smart Plant Pro</div>
+          <div style="font-size:9px;color:#888;">Monstera by window · Living room</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <!-- Avatar / user initials -->
+        <div class="avatar">D</div>
+      </div>
+    </div>
+
+    <div class="annotation" style="margin: 8px 14px 0;">
+      <span class="annotation-arrow">📝</span>
+      Header redesigned: app name + device name on same header. Settings moved to tab bar, eliminating crowded inline controls.
+    </div>
+
+    <!-- ── Device selector ── (slim, pill-shaped) -->
+    <div class="device-pill-row" style="padding: 10px 14px 0;">
+      <!-- REUSABLE: DeviceStatusBar.tsx — device select portion -->
+      <div class="device-pill" style="position:relative;">
+        <span class="abs-badge reuse-badge" style="top:-10px;right:0;">[REUSE] DeviceStatusBar</span>
+        <span style="font-size:11px;">🌡 Monstera by window</span>
+        <div class="device-pill-status">
+          <div class="dot-green"></div>
+          <span>Live</span>
+          <span style="color:#aaa;">▾</span>
+        </div>
+      </div>
+      <div class="device-pill-actions">
+        <div class="icon-btn" title="Edit device">✏️</div>
+      </div>
+    </div>
+
+    <div class="content" style="padding-top: 10px;">
+
+      <!-- ── Status banner (contextual only when needed) ── -->
+      <!-- REUSABLE: StatusBanners.tsx -->
+      <div class="status-banner" style="position:relative;">
+        <span class="abs-badge reuse-badge">[REUSE] StatusBanners</span>
+        <div class="banner-icon">⚡</div>
+        <div>
+          <div style="font-size:11px;font-weight:bold;">Live — updated 12s ago</div>
+          <div style="font-size:9px;color:#888;">WiFi: MyHome (−67 dBm)</div>
+        </div>
+      </div>
+
+      <!-- ── Plant Hero card ── -->
+      <!-- REUSABLE: PlantHero.tsx -->
+      <div class="plant-hero-card" style="position:relative;">
+        <span class="abs-badge reuse-badge">[REUSE] PlantHero</span>
+        <div class="plant-hero-inner">
+          <div class="plant-avatar">🌿</div>
+          <div class="plant-info">
+            <div class="plant-name">
+              Monstera
+              <button style="border:1px solid #ccc;border-radius:50%;width:20px;height:20px;background:#f5f5f5;font-size:9px;cursor:pointer;" title="Edit plant name">✏️</button>
+            </div>
+            <div class="plant-type">Monstera Deliciosa · Living room</div>
+          </div>
+          <div class="health-badge">OK ✓</div>
+        </div>
+        <div class="quick-stats-row">
+          <div class="quick-stat-chip">22.4°C</div>
+          <div class="quick-stat-chip">Soil 1834</div>
+          <div class="quick-stat-chip">🌊 Watered 3h ago</div>
+          <div class="quick-stat-chip">☀️ Bright</div>
+        </div>
+      </div>
+
+      <!-- ── Alert banner (shown only when alert exists) ── -->
+      <div class="annotation"><span class="annotation-arrow">📝</span> Alert banner & notification toggle stay here, conditionally shown (no change to logic)</div>
+
+      <!-- ── Soil Moisture Gauge (primary metric) ── -->
+      <!-- REUSABLE: CircularGauge.tsx inside SensorGrid -->
+      <div class="gauge-section" style="position:relative;">
+        <span class="abs-badge reuse-badge">[REUSE] CircularGauge</span>
+        <div class="section-eyebrow">Soil Moisture</div>
+        <div class="gauge-circle">
+          <div>
+            <div class="gauge-value">62%</div>
+            <div class="gauge-label">Moist</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Sensor Cards (temperature + light) ── -->
+      <!-- REUSABLE: SensorGrid.tsx -->
+      <div class="sensor-grid" style="position:relative;">
+        <span style="position:absolute;top:-16px;left:0;z-index:10;" class="reuse-badge">[REUSE] SensorGrid</span>
+        <div class="sensor-card">
+          <div class="sensor-icon">🌡</div>
+          <div class="sensor-label">Temperature</div>
+          <div class="sensor-value">22.4<span class="sensor-unit">°C</span></div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-icon">☀️</div>
+          <div class="sensor-label">Light</div>
+          <div class="sensor-value" style="font-size:18px;">Bright</div>
+        </div>
+      </div>
+
+      <!-- ── Water Pump CTA ── (primary action) -->
+      <!-- REUSABLE: Rebuilt from DashboardPage pump section -->
+      <div class="action-row" style="position:relative;">
+        <span style="position:absolute;top:-16px;left:0;" class="reuse-badge">[REUSE] PumpControl</span>
+        <div class="btn-primary-wire">💧 Water Now</div>
+        <div class="btn-secondary-wire">📊 History</div>
+      </div>
+
+      <div class="annotation"><span class="annotation-arrow">📝</span> "Water Now" is the primary CTA — prominent dark button. "History" shortcut navigates to History tab.</div>
+
+      <!-- ── History Chart (compact preview) ── -->
+      <!-- REUSABLE: HistoryChart.tsx -->
+      <div class="chart-card" style="position:relative;">
+        <span class="abs-badge reuse-badge">[REUSE] HistoryChart</span>
+        <div class="chart-header">
+          <div style="font-size:13px;font-weight:bold;">Readings History</div>
+          <div class="range-tabs">
+            <div class="range-tab">6h</div>
+            <div class="range-tab">12h</div>
+            <div class="range-tab active">24h</div>
+          </div>
+        </div>
+        <div class="chart-placeholder">
+          <div class="chart-bar" style="height:45%;"></div>
+          <div class="chart-bar" style="height:60%;"></div>
+          <div class="chart-bar" style="height:50%;"></div>
+          <div class="chart-bar" style="height:80%;"></div>
+          <div class="chart-bar" style="height:65%;"></div>
+          <div class="chart-bar" style="height:70%;"></div>
+          <div class="chart-bar" style="height:55%;"></div>
+          <div class="chart-bar" style="height:75%;"></div>
+          <div class="chart-bar" style="height:90%;"></div>
+          <div class="chart-bar" style="height:85%;"></div>
+          <div class="chart-bar" style="height:72%;"></div>
+          <div class="chart-bar" style="height:68%;"></div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+
+    <!-- ── Bottom Tab Bar ── (NEW) -->
+    <!-- NEW: BottomTabBar component -->
+    <div class="tab-bar" style="position:sticky;width:100%;left:0;transform:none;">
+      <span style="position:absolute;top:-20px;left:50%;transform:translateX(-50%);" class="new-badge">[NEW] BottomTabBar</span>
+      <div class="tab-item active">
+        <div class="tab-icon">🌿</div>
+        <div class="tab-label">Dashboard</div>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">📈</div>
+        <div class="tab-label">History</div>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">⚙️</div>
+        <div class="tab-label">Settings</div>
+      </div>
+    </div>
+
+  </div><!-- /frame-outer -->
+
+  <div class="annotation" style="max-width:420px;margin:12px auto;"><span class="annotation-arrow">📝</span> Key UX win: Bottom tab bar moves all 8 CollapsibleSection settings to a dedicated "Settings" tab — the dashboard becomes clean, focused on sensor data & actions only.</div>
+
+
+  <!-- ────────────────────────── SCREEN 2: Settings Tab ────────────────────────── -->
+  <div class="wireframe-title" style="margin-top: 32px;">Screen 2 — Settings Tab</div>
+
+  <div class="frame-outer">
+    <div class="page-label">Settings Tab (replaces inline CollapsibleSections)</div>
+    <div class="status-bar">
+      <span>9:41 AM</span>
+      <span>●●●●</span>
+    </div>
+
+    <div class="app-header">
+      <div class="app-title">Settings</div>
+      <div style="font-size:11px;color:#888;">Monstera by window</div>
+    </div>
+
+    <div class="content" style="padding-top:12px;">
+
+      <!-- ── Target Moisture ── -->
+      <!-- REUSABLE: CollapsibleSection.tsx -->
+      <div class="collapsible-card" style="position:relative;">
+        <span class="abs-badge reuse-badge">[REUSE] CollapsibleSection</span>
+        <div class="collapsible-header">
+          <div>
+            <div class="collapsible-title">Target Moisture</div>
+            <div class="collapsible-subtitle">Current: 2800 raw</div>
+          </div>
+          <span class="chevron">▾</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="slider-row">
+            <div class="slider-wire"><div class="slider-thumb"></div></div>
+            <div class="slider-value">2800</div>
+            <div class="btn-primary-wire" style="padding:6px 12px;flex:0;white-space:nowrap;font-size:11px;">Save</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Calibrate Soil ── -->
+      <div class="collapsible-card" style="position:relative;">
+        <span class="abs-badge reuse-badge">[REUSE] CollapsibleSection</span>
+        <div class="collapsible-header">
+          <div>
+            <div class="collapsible-title">Calibrate Soil Sensor</div>
+            <div class="collapsible-subtitle">Not calibrated</div>
+          </div>
+          <span class="chevron">▸</span>
+        </div>
+      </div>
+
+      <!-- ── Auto Watering Schedule ── -->
+      <div class="collapsible-card" style="position:relative;">
+        <span class="abs-badge reuse-badge">[REUSE] CollapsibleSection</span>
+        <div class="collapsible-header">
+          <div>
+            <div class="collapsible-title">Auto Watering Schedule</div>
+            <div class="collapsible-subtitle">Off</div>
+          </div>
+          <span class="chevron">▸</span>
+        </div>
+      </div>
+
+      <!-- ── Plant Profiles ── -->
+      <div class="collapsible-card" style="position:relative;">
+        <span class="abs-badge reuse-badge">[REUSE] CollapsibleSection</span>
+        <div class="collapsible-header">
+          <div>
+            <div class="collapsible-title">Plant Profiles</div>
+            <div class="collapsible-subtitle">2 profiles</div>
+          </div>
+          <span class="chevron">▸</span>
+        </div>
+      </div>
+
+      <!-- ── Device Diagnostics ── -->
+      <div class="collapsible-card" style="position:relative;">
+        <span class="abs-badge reuse-badge">[REUSE] CollapsibleSection</span>
+        <div class="collapsible-header">
+          <div>
+            <div class="collapsible-title">Device Diagnostics</div>
+            <div class="collapsible-subtitle">Uptime 143m</div>
+          </div>
+          <span class="chevron">▸</span>
+        </div>
+      </div>
+
+      <!-- ── Watering Log ── -->
+      <div class="collapsible-card" style="position:relative;">
+        <span class="abs-badge reuse-badge">[REUSE] CollapsibleSection</span>
+        <div class="collapsible-header">
+          <div>
+            <div class="collapsible-title">Watering Log</div>
+            <div class="collapsible-subtitle">12 events</div>
+          </div>
+          <span class="chevron">▸</span>
+        </div>
+      </div>
+
+      <!-- ── Invite / Share ── -->
+      <div class="collapsible-card" style="position:relative;">
+        <span class="abs-badge reuse-badge">[REUSE] CollapsibleSection</span>
+        <div class="collapsible-header">
+          <div>
+            <div class="collapsible-title">Invite Users</div>
+            <div class="collapsible-subtitle">Share access</div>
+          </div>
+          <span class="chevron">▸</span>
+        </div>
+      </div>
+
+      <!-- ── Reset WiFi (Destructive — with confirm) ── -->
+      <!-- NEW: ConfirmDestructiveButton -->
+      <div class="confirm-dialog" style="position:relative;">
+        <span class="abs-badge new-badge">[NEW] ConfirmDestructiveButton</span>
+        <div class="confirm-title">⚠️ Reset Device WiFi</div>
+        <div class="confirm-body">Device will restart into setup mode. All current readings will pause. Are you sure?</div>
+        <div class="confirm-btns">
+          <div class="btn-cancel-wire">Cancel</div>
+          <div class="btn-danger-wire">Reset WiFi</div>
+        </div>
+      </div>
+      <div class="annotation"><span class="annotation-arrow">📝</span> Destructive "Reset WiFi" moved here with a mandatory confirmation step before executing. Fixes critical UX gap.</div>
+
+      <!-- ── Sign out ── -->
+      <div style="text-align:center;padding:16px 0 8px;font-size:12px;color:#888;border-top:1px dashed #ddd;margin-top:8px;">
+        Sign out · Deep@email.com
+      </div>
+
+    </div><!-- /content -->
+
+    <!-- Tab bar -->
+    <div class="tab-bar" style="position:sticky;width:100%;left:0;transform:none;">
+      <div class="tab-item">
+        <div class="tab-icon">🌿</div>
+        <div class="tab-label">Dashboard</div>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">📈</div>
+        <div class="tab-label">History</div>
+      </div>
+      <div class="tab-item active">
+        <div class="tab-icon">⚙️</div>
+        <div class="tab-label">Settings</div>
+      </div>
+    </div>
+
+  </div><!-- /frame-outer -->
+
+
+  <!-- ────────────────────────── SCREEN 3: Claim Device Redesign ────────────────────────── -->
+  <div class="wireframe-title" style="margin-top: 32px;">Screen 3 — Add Device Page (Redesign)</div>
+  <div class="wireframe-subtitle">Consistent with Dashboard: same background, cleaner header with back arrow</div>
+
+  <div class="frame-outer claim-frame">
+    <div class="page-label">Add Device Page</div>
+    <div class="status-bar">
+      <span>9:41 AM</span>
+      <span>●●●●</span>
+    </div>
+
+    <!-- Header with back button -->
+    <!-- NEW: Consistent back-arrow header -->
+    <div class="app-header" style="position:relative;">
+      <span class="abs-badge new-badge">[NEW] ConsistentPageHeader</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:32px;height:32px;border:2px solid #ccc;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:14px;">←</div>
+        <div>
+          <div class="app-title">Add Device</div>
+          <div style="font-size:9px;color:#888;">Claim an ESP32 plant monitor</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content" style="padding-top:10px;">
+
+      <!-- ── Discover devices ── -->
+      <!-- REUSABLE: ClaimDevicePage.tsx section-card -->
+      <div class="plant-hero-card" style="position:relative;">
+        <span class="abs-badge reuse-badge">[REUSE] section-card</span>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <div style="width:32px;height:32px;border:1.5px solid #bbb;border-radius:10px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:14px;">📡</div>
+          <div>
+            <div style="font-size:13px;font-weight:bold;">Discover Devices</div>
+            <div style="font-size:10px;color:#888;">Online = seen in last 2 min</div>
+          </div>
+        </div>
+
+        <!-- Device list items -->
+        <div class="device-list-item">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="dot-green" style="background:#888;"></div>
+            <div class="mac-text">D4:E9:F4:BD:36:CC</div>
+            <span style="font-size:9px;font-family:Arial;color:#666;text-transform:uppercase;">Online</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:9px;border:1px solid #ccc;border-radius:10px;padding:2px 6px;background:#f5f5f5;">Available</span>
+            <div class="btn-primary-wire" style="padding:5px 10px;flex:0;font-size:10px;border-radius:8px;">Claim</div>
+          </div>
+        </div>
+        <div class="device-list-item" style="opacity:0.45;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="dot-green" style="background:#ccc;"></div>
+            <div class="mac-text">A1:B2:C3:D4:E5:F6</div>
+            <span style="font-size:9px;font-family:Arial;color:#bbb;text-transform:uppercase;">Offline</span>
+          </div>
+          <span style="font-size:9px;color:#bbb;">Claimed</span>
+        </div>
+      </div>
+
+      <!-- ── Manual entry (collapsible by default) ── -->
+      <!-- REUSABLE: CollapsibleSection.tsx -->
+      <div class="collapsible-card" style="position:relative;">
+        <span class="abs-badge reuse-badge">[REUSE] CollapsibleSection</span>
+        <div class="collapsible-header">
+          <div>
+            <div class="collapsible-title">Enter MAC Manually</div>
+            <div class="collapsible-subtitle">Find in Serial Monitor output</div>
+          </div>
+          <span class="chevron">▸</span>
+        </div>
+      </div>
+      <div class="annotation"><span class="annotation-arrow">📝</span> Manual entry collapsed by default — discover panel is the primary UX flow. Reduces visual complexity.</div>
+
+    </div><!-- /content -->
+  </div><!-- /claim-frame -->
+
+
+  <!-- ────────────────────────── SCREEN 4: Sensor Skeleton Loading ────────────────────────── -->
+  <div class="wireframe-title" style="margin-top: 32px;">Screen 4 — Loading State (Skeleton)</div>
+  <div class="wireframe-subtitle">New: skeleton loading for sensor cards matching final layout exactly</div>
+
+  <div class="frame-outer">
+    <div class="page-label">Dashboard — Loading State</div>
+    <div class="status-bar"><span>9:41 AM</span><span>●●●●</span></div>
+    <div class="app-header">
+      <div class="logo-row"><div class="logo-mark">🌿</div><div class="app-title">Smart Plant Pro</div></div>
+      <div class="avatar">D</div>
+    </div>
+    <div class="content" style="padding-top:10px;">
+
+      <!-- Plant hero skeleton -->
+      <!-- NEW: SkeletonCard component -->
+      <div class="plant-hero-card" style="position:relative;">
+        <span class="abs-badge new-badge">[NEW] SkeletonCard</span>
+        <div class="plant-hero-inner">
+          <div class="plant-avatar" style="background:#ececec;border-color:#ddd;"></div>
+          <div class="plant-info">
+            <div style="height:14px;background:#ececec;border-radius:6px;width:80%;margin-bottom:6px;"></div>
+            <div style="height:10px;background:#f0f0f0;border-radius:5px;width:50%;"></div>
+          </div>
+          <div style="width:48px;height:28px;background:#ececec;border-radius:12px;"></div>
+        </div>
+      </div>
+
+      <!-- Gauge skeleton -->
+      <div class="gauge-section" style="border-color:#e0e0e0;">
+        <div style="width:130px;height:130px;border-radius:50%;border:10px solid #ececec;margin:0 auto;"></div>
+      </div>
+
+      <!-- Sensor cards skeleton -->
+      <div class="sensor-grid">
+        <div class="sensor-card" style="border-color:#e0e0e0;">
+          <div style="height:32px;width:32px;background:#ececec;border-radius:10px;margin-bottom:8px;"></div>
+          <div style="height:8px;background:#ececec;border-radius:4px;width:60%;margin-bottom:6px;"></div>
+          <div style="height:24px;background:#e8e8e8;border-radius:6px;width:75%;"></div>
+        </div>
+        <div class="sensor-card" style="border-color:#e0e0e0;">
+          <div style="height:32px;width:32px;background:#ececec;border-radius:10px;margin-bottom:8px;"></div>
+          <div style="height:8px;background:#ececec;border-radius:4px;width:60%;margin-bottom:6px;"></div>
+          <div style="height:24px;background:#e8e8e8;border-radius:6px;width:55%;"></div>
+        </div>
+      </div>
+
+      <div class="annotation"><span class="annotation-arrow">📝</span> Skeletons match exact layout of loaded state — no layout shift. Use CSS animation-pulse for the shimmer effect.</div>
+    </div>
+  </div>
+
+</div><!-- /padding wrapper -->
+
+</body>
+</html>
