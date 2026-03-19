@@ -65,12 +65,13 @@ export default function ExportModal({ mac, onClose }: Props) {
         const v = child.val()
         rows.push({
           epoch,
-          t:  v.t  ?? NaN,
-          p:  v.p  ?? NaN,
-          h:  v.h  != null ? v.h : null,
-          s:  v.s  ?? 0,
-          l:  v.l  ?? 0,
-          pu: v.pu ?? 0,
+          t:   v.t   ?? NaN,
+          p:   v.p   ?? NaN,
+          h:   v.h   != null ? v.h : null,
+          s:   v.s   ?? 0,
+          lux: v.lux ?? NaN,
+          tk:  v.tk  ?? 0,
+          pu:  v.pu  ?? 0,
         })
       })
 
