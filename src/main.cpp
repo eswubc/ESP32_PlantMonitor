@@ -174,9 +174,9 @@ void setup() {
   Serial.begin(115200);
   delay(500);
 
-  // Safety: pump OFF first
+  // Safety: pump OFF first (active-HIGH MOSFET: LOW = pump OFF)
   pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN, HIGH);
+  digitalWrite(RELAY_PIN, LOW);
 
   Serial.println("\n========================================");
   Serial.println("Smart Plant Pro – Firebase RTDB (v2 WiFi-block)");
@@ -592,9 +592,19 @@ void initializeHardware() {
 
   printSensorDiagnostic();
 
-  pinMode(LIGHT_SENSOR_PIN, INPUT_PULLUP);
+  // VEML7700 ambient light sensor (I2C addr 0x10, ADDR pin → GND)
+  if (!veml.begin()) {
+    Serial.println("[HW] VEML7700 not found — check wiring (SDA=8, SCL=9, addr=0x10)");
+  } else {
+    veml.setGain(VEML7700_GAIN_1);
+    veml.setIntegrationTime(VEML7700_IT_100MS);
+    Serial.println("[HW] VEML7700 ready.");
+  }
+
+  // Float switch — tank water level (INPUT_PULLUP: HIGH=water present, LOW=tank empty)
+  pinMode(TANK_SENSOR_PIN, INPUT_PULLUP);
   pinMode(SOIL_SENSOR_PIN, INPUT);
-  digitalWrite(RELAY_PIN, HIGH);
+  digitalWrite(RELAY_PIN, LOW);   // active-HIGH MOSFET: LOW = pump OFF
 }
 
 // -----------------------------------------------------------------------------
