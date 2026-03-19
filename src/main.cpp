@@ -17,17 +17,18 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BMP280.h>
 #include <Adafruit_BME280.h>
+#include <Adafruit_VEML7700.h>
 #include <Firebase_ESP_Client.h>
 
 // -----------------------------------------------------------------------------
-// Hardware configuration — ESP32-D (DevKit) pinout
+// Hardware configuration — ESP32-S3 Zero (Waveshare) pinout
 // -----------------------------------------------------------------------------
-static constexpr uint8_t I2C_SDA_PIN      = 33;  // I2C data
-static constexpr uint8_t I2C_SCL_PIN      = 32;  // I2C clock
+static constexpr uint8_t I2C_SDA_PIN      = 8;   // I2C data (shared: BME280 + VEML7700)
+static constexpr uint8_t I2C_SCL_PIN      = 9;   // I2C clock (shared: BME280 + VEML7700)
 // BME280/BMP280 address detected at runtime (0x76 or 0x77)
-static constexpr uint8_t SOIL_SENSOR_PIN  = 34;  // ADC
-static constexpr uint8_t LIGHT_SENSOR_PIN = 35;  // Digital input
-static constexpr uint8_t RELAY_PIN        = 25;  // Active LOW: LOW = pump ON
+static constexpr uint8_t SOIL_SENSOR_PIN  = 11;  // ADC2
+static constexpr uint8_t TANK_SENSOR_PIN  = 12;  // Float switch, INPUT_PULLUP, LOW = tank empty
+static constexpr uint8_t RELAY_PIN        = 10;  // MOSFET gate: active-HIGH, HIGH = pump ON
 
 // -----------------------------------------------------------------------------
 // WiFi: from WiFiManager (first boot = AP "SmartPlantPro", then from flash).
@@ -83,7 +84,8 @@ struct SensorState {
   float    pressurePa;
   float    humidity;       // NAN when sensor is BMP280
   uint16_t soilRaw;
-  bool     lightBright;
+  float    lux;            // VEML7700 ambient light in lx (NAN if read fails)
+  bool     tankEmpty;      // true = float switch LOW = tank needs refill
   bool     pumpRunning;
 };
 
@@ -105,6 +107,7 @@ uint8_t    gChipId     = 0;
 
 Adafruit_BMP280 bmp;
 Adafruit_BME280 bme;
+static Adafruit_VEML7700 veml;
 
 // -----------------------------------------------------------------------------
 // Forward declarations
