@@ -717,9 +717,10 @@ void taskReadSensors(void *pv) {
       }
     }
 
-    local.soilRaw = analogRead(SOIL_SENSOR_PIN);
-    local.lightBright = (digitalRead(LIGHT_SENSOR_PIN) == LOW);
-    local.pumpRunning = (digitalRead(RELAY_PIN) == LOW);
+    local.soilRaw     = analogRead(SOIL_SENSOR_PIN);
+    local.lux         = veml.readLux();                        // returns NAN on error
+    local.tankEmpty   = (digitalRead(TANK_SENSOR_PIN) == LOW); // LOW = float down = empty
+    local.pumpRunning = (digitalRead(RELAY_PIN) == HIGH);      // HIGH = pump ON for active-HIGH MOSFET
 
     if (xSemaphoreTake(gStateMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
       gState = local;
