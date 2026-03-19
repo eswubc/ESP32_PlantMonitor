@@ -68,8 +68,9 @@ export function PlantHero({
     ? `${formatPressureHpa(readings.pressure)} hPa` : null
   const soil = hasLiveData && readings.soilRaw != null
     ? `Soil ${readings.soilRaw}` : null
-  const light = hasLiveData
-    ? (readings.lightBright === true ? 'Bright' : readings.lightBright === false ? 'Dim' : null) : null
+  const light = hasLiveData && readings.lux != null
+    ? `${Math.round(readings.lux)} lx`
+    : null
 
   const quickStats = [temp, soil, pressure, light].filter(Boolean)
 
