@@ -969,7 +969,7 @@ bool fetchPumpRequest() {
 // Task: Pump control (Core 0) – pulse watering on pumpRequest
 // -----------------------------------------------------------------------------
 void updateRelay(bool on) {
-  digitalWrite(RELAY_PIN, on ? LOW : HIGH);
+  digitalWrite(RELAY_PIN, on ? HIGH : LOW);  // active-HIGH MOSFET: HIGH = pump ON
 }
 
 uint16_t fetchTargetSoil() {
