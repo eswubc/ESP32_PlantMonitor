@@ -36,8 +36,8 @@
 // BME280+VEML7700 on I2C 5,9; pump MOSFET gate on 10
 static constexpr uint8_t I2C_SDA_PIN      = 5;   // ADC1-safe; was mic SD pin (freed)
 static constexpr uint8_t I2C_SCL_PIN      = 9;
-static constexpr uint8_t SOIL_SENSOR_PIN  = 1;   // ADC1 ch0 — reliable with WiFi (was amp DIN pin, freed)
-static constexpr uint8_t TANK_SENSOR_PIN  = 12;  // Float switch, INPUT_PULLUP, LOW = tank empty
+static constexpr uint8_t SOIL_SENSOR_PIN  = 12;  // ADC2 ch11 — soil moisture
+static constexpr uint8_t TANK_SENSOR_PIN  = 11;  // Float switch, INPUT_PULLUP, LOW = tank empty
 static constexpr uint8_t RELAY_PIN        = 10;  // MOSFET gate: active-HIGH, HIGH = pump ON
 #elif defined(BOARD_QTPY_ESP32S3)
 // Adafruit QT Py ESP32-S3 N4R2: I2C SDA=7 SCL=6; Soil=A0, Light=A2, Relay=10
