@@ -593,6 +593,19 @@ void initializeHardware() {
   Wire.setClock(100000);
   delay(200);
 
+  // I2C bus scan — print all responding addresses for debugging
+  Serial.printf("[I2C] Scanning bus (SDA=%d SCL=%d)...\n", I2C_SDA_PIN, I2C_SCL_PIN);
+  int found = 0;
+  for (uint8_t addr = 1; addr < 127; addr++) {
+    Wire.beginTransmission(addr);
+    if (Wire.endTransmission() == 0) {
+      Serial.printf("[I2C] Device found at 0x%02X\n", addr);
+      found++;
+    }
+  }
+  if (found == 0) Serial.println("[I2C] No devices found — check wiring!");
+  Serial.println();
+
   // Scan I2C for a Bosch sensor at 0x76 or 0x77, read chip ID register 0xD0
   const uint8_t candidates[] = {0x76, 0x77};
   for (uint8_t addr : candidates) {
@@ -651,6 +664,7 @@ void initializeHardware() {
   pinMode(TANK_SENSOR_PIN, INPUT_PULLUP);
   pinMode(SOIL_SENSOR_PIN, INPUT);
   digitalWrite(RELAY_PIN, LOW);   // active-HIGH MOSFET: LOW = pump OFF
+
 }
 
 // -----------------------------------------------------------------------------
