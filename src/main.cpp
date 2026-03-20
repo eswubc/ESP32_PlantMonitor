@@ -32,11 +32,11 @@
 // Hardware configuration — board-specific pinout
 // -----------------------------------------------------------------------------
 #ifdef BOARD_ESP32_S3_ZERO
-// ESP32-S3-Zero (Waveshare): GP 1–10 in use; Soil=11, Float=12, Relay=10
-// BME280+VEML7700 on I2C 8,9; pump MOSFET gate on 10
-static constexpr uint8_t I2C_SDA_PIN      = 8;
+// ESP32-S3-Zero (Waveshare): SDA=5, SCL=9, Soil=1(ADC1), Float=12, Relay=10
+// BME280+VEML7700 on I2C 5,9; pump MOSFET gate on 10
+static constexpr uint8_t I2C_SDA_PIN      = 5;   // ADC1-safe; was mic SD pin (freed)
 static constexpr uint8_t I2C_SCL_PIN      = 9;
-static constexpr uint8_t SOIL_SENSOR_PIN  = 11;  // ADC2, higher = drier
+static constexpr uint8_t SOIL_SENSOR_PIN  = 1;   // ADC1 ch0 — reliable with WiFi (was amp DIN pin, freed)
 static constexpr uint8_t TANK_SENSOR_PIN  = 12;  // Float switch, INPUT_PULLUP, LOW = tank empty
 static constexpr uint8_t RELAY_PIN        = 10;  // MOSFET gate: active-HIGH, HIGH = pump ON
 #elif defined(BOARD_QTPY_ESP32S3)
