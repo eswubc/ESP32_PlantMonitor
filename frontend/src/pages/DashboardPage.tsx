@@ -21,7 +21,7 @@ import { fadeSlideUp, fadeScale } from '../lib/motion'
 import { CollapsibleSection } from '../components/CollapsibleSection'
 import { ConfirmDestructiveButton } from '../components/ConfirmDestructiveButton'
 import { ThemeToggleIcon } from '../components/icons/ThemeToggleIcon'
-import { sanitizeString, sanitizeEmail, sanitizeInt, sanitizeNumber } from '../utils/sanitize'
+import { sanitizeString, sanitizeEmail, sanitizeInt, sanitizeNumber, sanitizeMac } from '../utils/sanitize'
 import { useRateLimit } from '../hooks/useRateLimit'
 import { RotatingText } from '../components/ui/rotating-text'
 import ScrollStack, { ScrollStackItem } from '../components/ui/ScrollStack'
@@ -45,7 +45,10 @@ export function DashboardPage() {
   // ── State ──
   const [myDevices, setMyDevices] = useState<string[]>([])
   const [devicesMeta, setDevicesMeta] = useState<Record<string, DeviceMeta>>({})
-  const [selectedMac, setSelectedMac] = useState<string>(() => localStorage.getItem(STORAGE_KEY) ?? '')
+  const [selectedMac, setSelectedMac] = useState<string>(() => {
+    const raw = localStorage.getItem(STORAGE_KEY) ?? ''
+    return sanitizeMac(raw) ? raw.toUpperCase() : ''
+  })
   const [readings, setReadings] = useState<Readings | null>(null)
   const [targetSoil, setTargetSoil] = useState(2800)
   const [targetSoilInput, setTargetSoilInput] = useState('2800')
@@ -269,7 +272,7 @@ export function DashboardPage() {
   function handleSaveTarget() {
     const n = sanitizeInt(targetSoilInput, 0, 4095, -1)
     if (n < 0) return
-    set(ref(firebaseDb, `devices/${selectedMac}/control/targetSoil`), n).catch(console.error)
+    set(ref(firebaseDb, `devices/${selectedMac}/control/targetSoil`), n).catch((err) => { if (import.meta.env.DEV) console.error(err) })
     setTargetSoil(n)
   }
 
@@ -299,12 +302,12 @@ export function DashboardPage() {
     const hysteresis = sanitizeInt(scheduleInput.hysteresis, 0, 2000, 200)
     const maxSecondsPerDay = sanitizeInt(scheduleInput.maxSecondsPerDay, 10, 600, 120)
     const cooldownMinutes = sanitizeInt(scheduleInput.cooldownMinutes, 5, 1440, 30)
-    await set(ref(firebaseDb, `devices/${selectedMac}/control/schedule/enabled`), scheduleInput.enabled).catch(console.error)
-    await set(ref(firebaseDb, `devices/${selectedMac}/control/schedule/hour`), hour).catch(console.error)
-    await set(ref(firebaseDb, `devices/${selectedMac}/control/schedule/minute`), minute).catch(console.error)
-    await set(ref(firebaseDb, `devices/${selectedMac}/control/schedule/hysteresis`), hysteresis).catch(console.error)
-    await set(ref(firebaseDb, `devices/${selectedMac}/control/schedule/maxSecondsPerDay`), maxSecondsPerDay).catch(console.error)
-    await set(ref(firebaseDb, `devices/${selectedMac}/control/schedule/cooldownMinutes`), cooldownMinutes).catch(console.error)
+    await set(ref(firebaseDb, `devices/${selectedMac}/control/schedule/enabled`), scheduleInput.enabled).catch((err) => { if (import.meta.env.DEV) console.error(err) })
+    await set(ref(firebaseDb, `devices/${selectedMac}/control/schedule/hour`), hour).catch((err) => { if (import.meta.env.DEV) console.error(err) })
+    await set(ref(firebaseDb, `devices/${selectedMac}/control/schedule/minute`), minute).catch((err) => { if (import.meta.env.DEV) console.error(err) })
+    await set(ref(firebaseDb, `devices/${selectedMac}/control/schedule/hysteresis`), hysteresis).catch((err) => { if (import.meta.env.DEV) console.error(err) })
+    await set(ref(firebaseDb, `devices/${selectedMac}/control/schedule/maxSecondsPerDay`), maxSecondsPerDay).catch((err) => { if (import.meta.env.DEV) console.error(err) })
+    await set(ref(firebaseDb, `devices/${selectedMac}/control/schedule/cooldownMinutes`), cooldownMinutes).catch((err) => { if (import.meta.env.DEV) console.error(err) })
     setSchedule((prev) => ({ ...prev, ...scheduleInput, hour, minute, hysteresis, maxSecondsPerDay, cooldownMinutes }))
   }
 
@@ -314,7 +317,7 @@ export function DashboardPage() {
       name: meta.name ? sanitizeString(meta.name, 80) : undefined,
       room: meta.room ? sanitizeString(meta.room, 80) : undefined,
     }
-    await set(ref(firebaseDb, `users/${user.uid}/devices/${mac}/meta`), safe).catch(console.error)
+    await set(ref(firebaseDb, `users/${user.uid}/devices/${mac}/meta`), safe).catch((err) => { if (import.meta.env.DEV) console.error(err) })
     setDevicesMeta((prev) => ({ ...prev, [mac]: safe }))
   }
 
@@ -329,7 +332,7 @@ export function DashboardPage() {
     if (!email || !user) return
     await rateLimitedInvite(async () => {
       const safeKey = email.replace(/[.#$[\]]/g, '_')
-      await set(ref(firebaseDb, `users/${user.uid}/invites/${safeKey}`), { email, at: Date.now() }).catch(console.error)
+      await set(ref(firebaseDb, `users/${user.uid}/invites/${safeKey}`), { email, at: Date.now() }).catch((err) => { if (import.meta.env.DEV) console.error(err) })
       setInviteEmail('')
     })
   }
@@ -399,30 +402,30 @@ export function DashboardPage() {
       profilePayload.lightPreference = editForm.lightPreference
     }
     if (editingProfileId) {
-      await set(ref(firebaseDb, `users/${user.uid}/plantProfiles/${editingProfileId}`), profilePayload).catch(console.error)
+      await set(ref(firebaseDb, `users/${user.uid}/plantProfiles/${editingProfileId}`), profilePayload).catch((err) => { if (import.meta.env.DEV) console.error(err) })
       if (selectedMac && editPresetId) {
         const preset = EXAMPLE_PLANTS.find((p) => p.id === editPresetId)
-        if (preset) { await set(ref(firebaseDb, `devices/${selectedMac}/control/targetSoil`), preset.targetSoil).catch(console.error); setTargetSoil(preset.targetSoil); setTargetSoilInput(String(preset.targetSoil)) }
+        if (preset) { await set(ref(firebaseDb, `devices/${selectedMac}/control/targetSoil`), preset.targetSoil).catch((err) => { if (import.meta.env.DEV) console.error(err) }); setTargetSoil(preset.targetSoil); setTargetSoilInput(String(preset.targetSoil)) }
       }
     } else {
       const newRef = push(ref(firebaseDb, `users/${user.uid}/plantProfiles`))
       const id = newRef.key
       if (!id) return
-      await set(newRef, profilePayload).catch(console.error)
+      await set(newRef, profilePayload).catch((err) => { if (import.meta.env.DEV) console.error(err) })
       if (andLinkToDevice && selectedMac) {
-        await set(ref(firebaseDb, `users/${user.uid}/devicePlant/${selectedMac}`), id).catch(console.error)
-        if (editPresetId) { const preset = EXAMPLE_PLANTS.find((p) => p.id === editPresetId); if (preset) { await set(ref(firebaseDb, `devices/${selectedMac}/control/targetSoil`), preset.targetSoil).catch(console.error); setTargetSoil(preset.targetSoil); setTargetSoilInput(String(preset.targetSoil)) } }
+        await set(ref(firebaseDb, `users/${user.uid}/devicePlant/${selectedMac}`), id).catch((err) => { if (import.meta.env.DEV) console.error(err) })
+        if (editPresetId) { const preset = EXAMPLE_PLANTS.find((p) => p.id === editPresetId); if (preset) { await set(ref(firebaseDb, `devices/${selectedMac}/control/targetSoil`), preset.targetSoil).catch((err) => { if (import.meta.env.DEV) console.error(err) }); setTargetSoil(preset.targetSoil); setTargetSoilInput(String(preset.targetSoil)) } }
       }
     }
     closeEditPlant()
   }
 
-  async function linkProfileToDevice(profileId: string) { if (!user || !selectedMac) return; await set(ref(firebaseDb, `users/${user.uid}/devicePlant/${selectedMac}`), profileId).catch(console.error) }
+  async function linkProfileToDevice(profileId: string) { if (!user || !selectedMac) return; await set(ref(firebaseDb, `users/${user.uid}/devicePlant/${selectedMac}`), profileId).catch((err) => { if (import.meta.env.DEV) console.error(err) }) }
 
   async function deleteProfile(profileId: string) {
     if (!user) return
-    await remove(ref(firebaseDb, `users/${user.uid}/plantProfiles/${profileId}`)).catch(console.error)
-    if (linkedProfileId === profileId && selectedMac) await set(ref(firebaseDb, `users/${user.uid}/devicePlant/${selectedMac}`), null).catch(console.error)
+    await remove(ref(firebaseDb, `users/${user.uid}/plantProfiles/${profileId}`)).catch((err) => { if (import.meta.env.DEV) console.error(err) })
+    if (linkedProfileId === profileId && selectedMac) await set(ref(firebaseDb, `users/${user.uid}/devicePlant/${selectedMac}`), null).catch((err) => { if (import.meta.env.DEV) console.error(err) })
   }
 
   async function handleResetDeviceWiFi() {
@@ -433,22 +436,22 @@ export function DashboardPage() {
     await Promise.all([
       set(ref(firebaseDb, `devices/${selectedMac}/control/resetProvisioning`), true),
       set(ref(firebaseDb, `devices/${selectedMac}/readings`), null),
-    ]).catch(console.error)
+    ]).catch((err) => { if (import.meta.env.DEV) console.error(err) })
   }
 
-  async function handleMarkDry() { if (!selectedMac || readings?.soilRaw == null) return; await set(ref(firebaseDb, `devices/${selectedMac}/calibration/boneDry`), readings.soilRaw).catch(console.error) }
-  async function handleMarkWet() { if (!selectedMac || readings?.soilRaw == null) return; await set(ref(firebaseDb, `devices/${selectedMac}/calibration/submerged`), readings.soilRaw).catch(console.error) }
+  async function handleMarkDry() { if (!selectedMac || readings?.soilRaw == null) return; await set(ref(firebaseDb, `devices/${selectedMac}/calibration/boneDry`), readings.soilRaw).catch((err) => { if (import.meta.env.DEV) console.error(err) }) }
+  async function handleMarkWet() { if (!selectedMac || readings?.soilRaw == null) return; await set(ref(firebaseDb, `devices/${selectedMac}/calibration/submerged`), readings.soilRaw).catch((err) => { if (import.meta.env.DEV) console.error(err) }) }
 
   async function handleTriggerPump() {
     if (!selectedMac || pumpCooldown) return
     await rateLimitedWater(async () => {
-      await set(ref(firebaseDb, `devices/${selectedMac}/control/pumpRequest`), true).catch(console.error)
+      await set(ref(firebaseDb, `devices/${selectedMac}/control/pumpRequest`), true).catch((err) => { if (import.meta.env.DEV) console.error(err) })
       setPumpCooldown(true)
       setTimeout(() => setPumpCooldown(false), 8000)
     })
   }
 
-  async function handleAckAlert() { if (!selectedMac) return; await set(ref(firebaseDb, `devices/${selectedMac}/alerts/lastAlert/ackAt`), Math.floor(Date.now() / 1000)).catch(console.error); setLastAlert(null) }
+  async function handleAckAlert() { if (!selectedMac) return; await set(ref(firebaseDb, `devices/${selectedMac}/alerts/lastAlert/ackAt`), Math.floor(Date.now() / 1000)).catch((err) => { if (import.meta.env.DEV) console.error(err) }); setLastAlert(null) }
 
   async function handleToggleNotifications() {
     if (notificationsEnabled) { setNotificationsEnabled(false); localStorage.setItem('notif_enabled', 'false'); return }
@@ -462,7 +465,7 @@ export function DashboardPage() {
     if (!('Notification' in window) || Notification.permission !== 'granted') return
     if (lastAlert.timestamp <= lastNotifiedAtRef.current) return
     lastNotifiedAtRef.current = lastAlert.timestamp
-    new Notification('Smart Plant Pro', { body: lastAlert.message, icon: '/plant-icon.svg' })
+    new Notification('Smart Plant Pro', { body: sanitizeString(lastAlert.message), icon: '/plant-icon.svg' })
   }, [lastAlert, notificationsEnabled])
 
   async function addNewProfile(e: React.FormEvent) {
@@ -471,8 +474,8 @@ export function DashboardPage() {
     const type = sanitizeString(newProfileType, 60)
     if (!name || !user) return
     const newRef = push(ref(firebaseDb, `users/${user.uid}/plantProfiles`)); const id = newRef.key; if (!id) return
-    await set(newRef, { name, type: type || '—', createdAt: Date.now() }).catch(console.error)
-    if (newProfilePresetId && selectedMac) { const preset = EXAMPLE_PLANTS.find((p) => p.id === newProfilePresetId); if (preset) { await set(ref(firebaseDb, `devices/${selectedMac}/control/targetSoil`), preset.targetSoil).catch(console.error); setTargetSoil(preset.targetSoil); setTargetSoilInput(String(preset.targetSoil)) } }
+    await set(newRef, { name, type: type || '—', createdAt: Date.now() }).catch((err) => { if (import.meta.env.DEV) console.error(err) })
+    if (newProfilePresetId && selectedMac) { const preset = EXAMPLE_PLANTS.find((p) => p.id === newProfilePresetId); if (preset) { await set(ref(firebaseDb, `devices/${selectedMac}/control/targetSoil`), preset.targetSoil).catch((err) => { if (import.meta.env.DEV) console.error(err) }); setTargetSoil(preset.targetSoil); setTargetSoilInput(String(preset.targetSoil)) } }
     setNewProfileName(''); setNewProfileType(''); setNewProfilePresetId(null)
   }
 

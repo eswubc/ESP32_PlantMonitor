@@ -88,7 +88,7 @@ export function ClaimDevicePage() {
       room: sanitizeString(claimRoom, 80) || undefined,
     }
     if (meta.name || meta.room) {
-      await set(ref(firebaseDb, `users/${user.uid}/devices/${justClaimedMac}/meta`), meta).catch(console.error)
+      await set(ref(firebaseDb, `users/${user.uid}/devices/${justClaimedMac}/meta`), meta).catch((err) => { if (import.meta.env.DEV) console.error(err) })
     }
     setJustClaimedMac(null)
     setClaimName('')

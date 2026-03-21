@@ -6,6 +6,11 @@ import type { HistoryRow } from '../types'
 
 const TZ = 'America/Los_Angeles'
 
+function safeCellValue(val: string): string {
+  if (typeof val === 'string' && /^[=+\-@]/.test(val)) return `'${val}`
+  return val
+}
+
 function epochToLabel(epoch: number): string {
   const zoned = toZonedTime(new Date(epoch * 1000), TZ)
   return format(zoned, 'MMM d yyyy, h:mm a')
@@ -29,15 +34,15 @@ function buildRawDataSheet(ws: ExcelJS.Worksheet, rows: HistoryRow[]): void {
 
   rows.forEach((row, i) => {
     const dataRow = ws.addRow({
-      ts:       epochToLabel(row.epoch),
+      ts:       safeCellValue(epochToLabel(row.epoch)),
       temp:     isNaN(row.t) ? '' : Math.round(row.t * 10) / 10,
       pressure: Math.round(row.p / 100 * 10) / 10,
       humidity: row.h == null || isNaN(row.h) ? '' : Math.round(row.h * 10) / 10,
       soil:     row.s,
       light:    isNaN(row.lux) ? '' : Math.round(row.lux),
-      pump:     row.pu === 1 ? 'ON' : 'OFF',
-      tank:     row.tk === 1 ? 'Empty' : 'Full',
-      notes:    '',
+      pump:     safeCellValue(row.pu === 1 ? 'ON' : 'OFF'),
+      tank:     safeCellValue(row.tk === 1 ? 'Empty' : 'Full'),
+      notes:    safeCellValue(''),
     })
 
     if (i % 2 === 0) {

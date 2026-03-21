@@ -1,7 +1,8 @@
 /**
  * Smart Plant Pro – Firebase RTDB Node
- * ESP32 plant monitor with auto-detected BME280/BMP280, soil sensor, LDR and
- * relay-controlled water pump. Three FreeRTOS tasks:
+ * ESP32-S3-Zero (Waveshare) plant monitor with auto-detected BME280/BMP280,
+ * VEML7700 light sensor, soil moisture sensor, float switch and relay-controlled
+ * water pump. Three FreeRTOS tasks:
  *  - taskReadSensors  (Core 0, 2 s): update shared SensorState.
  *  - taskFirebaseSync (Core 1, 5 s): push SensorState + health to RTDB.
  *  - taskPumpControl  (Core 1): listen for pumpRequest and run pulse watering.
@@ -9,58 +10,33 @@
 
 #include <Arduino.h>
 #include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BME280.h>
-
-#ifdef HARDWARE_TEST_MODE
-#include "hardware_test_mode.h"
-#endif
-
-#ifndef HARDWARE_TEST_MODE
 #include <WiFi.h>
 #include <esp_wifi.h>
 #include <WiFiManager.h>
 #include <ArduinoOTA.h>
 #include <Preferences.h>
+#include <Adafruit_Sensor.h>
 #include <Adafruit_BMP280.h>
 #include <Adafruit_BME280.h>
 #include <Adafruit_VEML7700.h>
 #include <Firebase_ESP_Client.h>
-#endif
 
 // -----------------------------------------------------------------------------
-// Hardware configuration — board-specific pinout
+// Hardware configuration — ESP32-S3-Zero (Waveshare)
+// SDA=5, SCL=9, Soil=12(ADC2), Float=11, Relay=10
+// BME280+VEML7700 on I2C; pump MOSFET gate on GPIO10 (active-HIGH)
 // -----------------------------------------------------------------------------
-#ifdef BOARD_ESP32_S3_ZERO
-// ESP32-S3-Zero (Waveshare): SDA=5, SCL=9, Soil=1(ADC1), Float=12, Relay=10
-// BME280+VEML7700 on I2C 5,9; pump MOSFET gate on 10
-static constexpr uint8_t I2C_SDA_PIN      = 5;   // ADC1-safe; was mic SD pin (freed)
+static constexpr uint8_t I2C_SDA_PIN      = 5;   // ADC1-safe
 static constexpr uint8_t I2C_SCL_PIN      = 9;
 static constexpr uint8_t SOIL_SENSOR_PIN  = 12;  // ADC2 ch11 — soil moisture
 static constexpr uint8_t TANK_SENSOR_PIN  = 11;  // Float switch, INPUT_PULLUP, LOW = tank empty
 static constexpr uint8_t RELAY_PIN        = 10;  // MOSFET gate: active-HIGH, HIGH = pump ON
-#elif defined(BOARD_QTPY_ESP32S3)
-// Adafruit QT Py ESP32-S3 N4R2: I2C SDA=7 SCL=6; Soil=A0, Light=A2, Relay=10
-static constexpr uint8_t I2C_SDA_PIN      = 7;
-static constexpr uint8_t I2C_SCL_PIN      = 6;
-static constexpr uint8_t SOIL_SENSOR_PIN  = 18;  // A0, ADC2
-static constexpr uint8_t LIGHT_SENSOR_PIN = 9;   // A2, digital-capable
-static constexpr uint8_t RELAY_PIN        = 10;  // Free GPIO for relay
-#else
-// ESP32-D (DevKit) default
-static constexpr uint8_t I2C_SDA_PIN      = 33;
-static constexpr uint8_t I2C_SCL_PIN      = 32;
-static constexpr uint8_t SOIL_SENSOR_PIN  = 34;
-static constexpr uint8_t LIGHT_SENSOR_PIN = 35;
-static constexpr uint8_t RELAY_PIN        = 25;
-#endif
 
 // -----------------------------------------------------------------------------
 // WiFi: from WiFiManager (first boot = AP "SmartPlantPro", then from flash).
 // Firebase: from portal (NVS) if user filled the form at 192.168.4.1, else these defaults.
 // Defaults come from firebase_defaults.h (empty) or optional secrets.h (gitignored).
 // -----------------------------------------------------------------------------
-#ifndef HARDWARE_TEST_MODE
 #include "firebase_defaults.h"
 
 #define API_KEY FIREBASE_API_KEY
@@ -101,11 +77,9 @@ FirebaseAuth fbAuth;
 FirebaseConfig fbConfig;
 
 String deviceId;  // WiFi.macAddress()
-#endif  // !HARDWARE_TEST_MODE
 
-#ifndef HARDWARE_TEST_MODE
 // -----------------------------------------------------------------------------
-// Sensor state shared between tasks (normal mode only)
+// Sensor state shared between tasks
 // -----------------------------------------------------------------------------
 struct SensorState {
   float    temperatureC;
@@ -194,7 +168,6 @@ static void clearBadWiFiAndRestart(const char* reason) {
   delay(2000);
   ESP.restart();
 }
-#endif  // !HARDWARE_TEST_MODE
 
 // -----------------------------------------------------------------------------
 // Setup
@@ -358,7 +331,7 @@ void setup() {
   wm.setConnectRetries(1);
   wm.setConnectTimeout(5);
   wm.setSaveConnectTimeout(6);  // Faster redirect after WiFi save
-  wm.setConfigPortalTimeout(0);
+  wm.setConfigPortalTimeout(300);
   wm.setCaptivePortalEnable(true);
   wm.setMinimumSignalQuality(10);  // Accept weaker signals during scan for faster UI
 
@@ -482,6 +455,7 @@ void setup() {
 
   // OTA: upload firmware over WiFi (e.g. PlatformIO: upload_port = <device-IP>, upload_protocol = espota)
   ArduinoOTA.setHostname("SmartPlantPro");
+  ArduinoOTA.setPassword("SmartPlantOTA2024!");
   ArduinoOTA.begin();
   Serial.println("ArduinoOTA ready.");
 
@@ -524,17 +498,10 @@ void setup() {
 }
 
 void loop() {
-#ifdef HARDWARE_TEST_MODE
-  hardwareTestLoop();
-  return;
-#endif
-#ifndef HARDWARE_TEST_MODE
   ArduinoOTA.handle();
   vTaskDelay(pdMS_TO_TICKS(100));
-#endif
 }
 
-#ifndef HARDWARE_TEST_MODE
 // -----------------------------------------------------------------------------
 // Firebase NVS: load and apply to fbConfig/fbAuth; clear on re-provision
 // -----------------------------------------------------------------------------
@@ -1041,6 +1008,7 @@ uint16_t fetchTargetSoil() {
     int val = ok ? fbClient.intData() : -1;
     xSemaphoreGive(gFirebaseMutex);
     if (ok && val >= 0) {
+      if (val < 0 || val > 4095) return 2800;  // Reject corrupt/malicious value
       return static_cast<uint16_t>(val);
     }
   }
@@ -1098,7 +1066,7 @@ void taskScheduleCheck() {
 
   time_t now = time(nullptr);
   if (now < 1000000000L) return;  // NTP not synced
-  struct tm* lt = localtime(&now);
+  struct tm tmBuf; struct tm* lt = &tmBuf; localtime_r(&now, &tmBuf);
   int nowHour = lt->tm_hour;
   int nowMin = lt->tm_min;
 
@@ -1137,7 +1105,7 @@ void updateScheduleAfterWater(int durationSec, uint16_t soilBefore, uint16_t soi
   time_t now = time(nullptr);
   if (now < 1000000000L) return;
 
-  struct tm* lt = localtime(&now);
+  struct tm tmBuf; struct tm* lt = &tmBuf; localtime_r(&now, &tmBuf);
   char todayBuf[16];
   snprintf(todayBuf, sizeof(todayBuf), "%04d-%02d-%02d", lt->tm_year + 1900, lt->tm_mon + 1, lt->tm_mday);
 
@@ -1148,6 +1116,7 @@ void updateScheduleAfterWater(int durationSec, uint16_t soilBefore, uint16_t soi
     // todaySeconds: we need to add durationSec. First fetch current.
     bool ok = Firebase.RTDB.getInt(&fbClient, (base + "todaySeconds").c_str());
     int cur = ok ? fbClient.intData() : 0;
+    if (cur < 0 || cur > 86400) cur = 0;
     Firebase.RTDB.setInt(&fbClient, (base + "todaySeconds").c_str(), cur + durationSec);
     xSemaphoreGive(gFirebaseMutex);
   }
@@ -1176,6 +1145,8 @@ void taskPumpControl(void *pv) {
       vTaskDelay(PUMP_IDLE_MS);
       continue;
     }
+
+    unsigned long pumpStartMs = millis();
 
     uint16_t target = fetchTargetSoil();
 
@@ -1206,6 +1177,13 @@ void taskPumpControl(void *pv) {
       }
       vTaskDelay(PUMP_IDLE_MS);
       continue;
+    }
+
+    if (millis() - pumpStartMs > 60000UL) { /* 60 second max */
+      updateRelay(false);
+      Serial.println("[Pump] TIMEOUT: max runtime exceeded");
+      gPumpRequest = false;
+      break;
     }
 
     if (s.soilRaw <= target) {
@@ -1244,6 +1222,5 @@ void taskPumpControl(void *pv) {
     }
   }
 }
-#endif  // !HARDWARE_TEST_MODE
 
 // (Stream callbacks removed — using polling to avoid FreeRTOS mutex crash)
