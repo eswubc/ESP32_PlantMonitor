@@ -1,0 +1,115 @@
+{
+  "rules": {
+
+    // -----------------------------------------------------------------------
+    // deviceList/{mac}
+    //   • Any authenticated user (including the ESP32 device account) can read
+    //     the full list — needed for device discovery in ClaimDevicePage.
+    //   • lastSeen: any authenticated user can write (ESP32 heartbeat).
+    //   • claimedBy: can only be written if it is currently null/absent
+    //     (first-claim wins) AND only to the requester's own UID.
+    // -----------------------------------------------------------------------
+    "deviceList": {
+      ".read": "auth != null",
+      "$mac": {
+        "lastSeen": {
+          ".write": "auth != null"
+        },
+        "claimedBy": {
+          ".write": "auth != null && (!data.exists() || data.val() == null) && newData.val() == auth.uid"
+        }
+      }
+    },
+
+    // -----------------------------------------------------------------------
+    // devices/{mac}
+    //   Owner check helper (reused in multiple sub-rules):
+    //     root.child('users').child(auth.uid).child('devices').child($mac).exists()
+    //
+    //   • readings      — read: owner only; write: any auth user (ESP32 push).
+    //                     Owner can also write null (factory-reset wipe).
+    //   • history/{ts}  — read: owner only; write: any auth user (ESP32 push).
+    //   • waterLog/{ts} — read: owner only; write: any auth user (ESP32 push).
+    //   • diagnostics   — read: owner only; write: any auth user (ESP32 push).
+    //   • alerts        — read: owner only; write: any auth user (ESP32 push).
+    //                     Owner can ack (write ackAt) via alerts/lastAlert/ackAt.
+    //   • control       — read & write: owner only (frontend).
+    //   • calibration   — read & write: owner only (frontend).
+    // -----------------------------------------------------------------------
+    "devices": {
+      "$mac": {
+
+        // Readings: ESP32 writes live sensor data; owner reads + can null-wipe on
+        // factory reset. Write is open to all authenticated users because the ESP32
+        // signs in as a dedicated device account whose UID is not in the ownership
+        // registry. Read is restricted to the owner only.
+        "readings": {
+          ".read":  "auth != null && root.child('users').child(auth.uid).child('devices').child($mac).exists()",
+          ".write": "auth != null"
+        },
+
+        // History snapshots written by ESP32, readable only by owner.
+        "history": {
+          ".read":  "auth != null && root.child('users').child(auth.uid).child('devices').child($mac).exists()",
+          "$epoch": {
+            ".write": "auth != null"
+          }
+        },
+
+        // Watering log written by ESP32, readable only by owner.
+        "waterLog": {
+          ".read":  "auth != null && root.child('users').child(auth.uid).child('devices').child($mac).exists()",
+          "$epoch": {
+            ".write": "auth != null"
+          }
+        },
+
+        // Diagnostics written by ESP32, readable only by owner.
+        "diagnostics": {
+          ".read":  "auth != null && root.child('users').child(auth.uid).child('devices').child($mac).exists()",
+          ".write": "auth != null"
+        },
+
+        // Alerts written by ESP32; owner can also write ackAt acknowledgement.
+        "alerts": {
+          ".read":  "auth != null && root.child('users').child(auth.uid).child('devices').child($mac).exists()",
+          ".write": "auth != null"
+        },
+
+        // Control: only the owner may read or write (pump, schedule, reset).
+        "control": {
+          ".read":  "auth != null && root.child('users').child(auth.uid).child('devices').child($mac).exists()",
+          ".write": "auth != null && root.child('users').child(auth.uid).child('devices').child($mac).exists()"
+        },
+
+        // Calibration: only the owner may read or write.
+        "calibration": {
+          ".read":  "auth != null && root.child('users').child(auth.uid).child('devices').child($mac).exists()",
+          ".write": "auth != null && root.child('users').child(auth.uid).child('devices').child($mac).exists()"
+        }
+      }
+    },
+
+    // -----------------------------------------------------------------------
+    // users/{uid}
+    //   Only the authenticated user who owns this UID may read or write their
+    //   own subtree (devices registry, plant profiles, devicePlant links,
+    //   invites, profile preferences).
+    // -----------------------------------------------------------------------
+    "users": {
+      "$uid": {
+        ".read":  "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+
+    // -----------------------------------------------------------------------
+    // Default deny — everything not matched above is inaccessible.
+    // -----------------------------------------------------------------------
+    "$other": {
+      ".read":  false,
+      ".write": false
+    }
+
+  }
+}

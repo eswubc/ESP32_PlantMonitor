@@ -83,18 +83,19 @@ export function getProfileTips(readings: Readings | null, profile: PlantProfile 
   }
 
   const pref = profile.lightPreference
-  if (pref && pref !== 'any' && readings.lightBright !== undefined) {
-    const bright = readings.lightBright === true
+  if (pref && pref !== 'any' && readings.lux != null && !Number.isNaN(readings.lux)) {
+    // >1000 lx = bright (near window / indirect daylight); ≤1000 lx = dim
+    const bright = readings.lux > 1000
     if (pref === 'bright' && !bright) {
       tips.push({
         id: 'light-dim',
-        message: `${profile.name} prefers bright light — current: dim`,
+        message: `${profile.name} prefers bright light — current: dim (${Math.round(readings.lux)} lx)`,
         severity: 'info',
       })
     } else if (pref === 'dim' && bright) {
       tips.push({
         id: 'light-bright',
-        message: `${profile.name} prefers dim light — current: bright`,
+        message: `${profile.name} prefers dim light — current: bright (${Math.round(readings.lux)} lx)`,
         severity: 'info',
       })
     }

@@ -139,7 +139,26 @@ export function SensorGrid({
           </div>
           <p className="stat-label mb-2">Light</p>
           <p className="font-display text-3xl font-bold text-forest dark:text-slate-100 leading-none">
-            {readings?.lightBright === true ? 'Bright' : readings?.lightBright === false ? 'Dim' : '—'}
+            {readings?.lux != null ? `${Math.round(readings.lux)} lx` : '—'}
+          </p>
+        </motion.div>
+
+        {/* Water Tank */}
+        <motion.div
+          variants={cardItem}
+          whileHover={dataUntrusted ? {} : { y: -3, scale: 1.01 }}
+          transition={spring.snappy}
+          className="sensor-card relative overflow-hidden"
+        >
+          {isLive && <LiveDot />}
+          <div className={`icon-pill mb-4 ${readings?.tk === 1 ? 'bg-red-100 dark:bg-red-900/40' : 'dark:bg-primary/25'}`}>
+            <svg className={`h-5 w-5 ${readings?.tk === 1 ? 'text-red-500' : 'text-primary dark:text-primary-300'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18M7 6h10M7 18h10" />
+            </svg>
+          </div>
+          <p className="stat-label mb-2">Water Tank</p>
+          <p className={`font-display text-3xl font-bold leading-none ${readings?.tk === 1 ? 'text-red-500' : 'text-forest dark:text-slate-100'}`}>
+            {readings?.tk == null ? '—' : readings.tk === 1 ? 'Empty' : 'OK'}
           </p>
         </motion.div>
 

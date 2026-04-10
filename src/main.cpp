@@ -1,7 +1,8 @@
 /**
  * Smart Plant Pro – Firebase RTDB Node
- * ESP32 plant monitor with auto-detected BME280/BMP280, soil sensor, LDR and
- * relay-controlled water pump. Three FreeRTOS tasks:
+ * ESP32-S3-Zero (Waveshare) plant monitor with auto-detected BME280/BMP280,
+ * VEML7700 light sensor, soil moisture sensor, float switch and relay-controlled
+ * water pump. Three FreeRTOS tasks:
  *  - taskReadSensors  (Core 0, 2 s): update shared SensorState.
  *  - taskFirebaseSync (Core 1, 5 s): push SensorState + health to RTDB.
  *  - taskPumpControl  (Core 1): listen for pumpRequest and run pulse watering.
@@ -9,56 +10,33 @@
 
 #include <Arduino.h>
 #include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BME280.h>
-
-#ifdef HARDWARE_TEST_MODE
-#include "hardware_test_mode.h"
-#endif
-
-#ifndef HARDWARE_TEST_MODE
 #include <WiFi.h>
 #include <esp_wifi.h>
 #include <WiFiManager.h>
 #include <ArduinoOTA.h>
 #include <Preferences.h>
+#include <Adafruit_Sensor.h>
 #include <Adafruit_BMP280.h>
+#include <Adafruit_BME280.h>
+#include <Adafruit_VEML7700.h>
 #include <Firebase_ESP_Client.h>
-#endif
 
 // -----------------------------------------------------------------------------
-// Hardware configuration — board-specific pinout
+// Hardware configuration — ESP32-S3-Zero (Waveshare)
+// SDA=5, SCL=9, Soil=12(ADC2), Float=11, Relay=10
+// BME280+VEML7700 on I2C; pump MOSFET gate on GPIO10 (active-HIGH)
 // -----------------------------------------------------------------------------
-#ifdef BOARD_ESP32_S3_ZERO
-// ESP32-S3-Zero (Waveshare): GP 1–10 in use; Soil=11, Light=12, Relay=10
-// BME280 on I2C 8,9; pump relay on 10
-static constexpr uint8_t I2C_SDA_PIN      = 8;
+static constexpr uint8_t I2C_SDA_PIN      = 5;   // ADC1-safe
 static constexpr uint8_t I2C_SCL_PIN      = 9;
-static constexpr uint8_t SOIL_SENSOR_PIN  = 11;  // ADC2, higher = drier
-static constexpr uint8_t LIGHT_SENSOR_PIN = 12;  // Digital, LOW = bright
-static constexpr uint8_t RELAY_PIN        = 10;  // Active LOW: LOW = pump ON
-#elif defined(BOARD_QTPY_ESP32S3)
-// Adafruit QT Py ESP32-S3 N4R2: I2C SDA=7 SCL=6; Soil=A0, Light=A2, Relay=10
-static constexpr uint8_t I2C_SDA_PIN      = 7;
-static constexpr uint8_t I2C_SCL_PIN      = 6;
-static constexpr uint8_t SOIL_SENSOR_PIN  = 18;  // A0, ADC2
-static constexpr uint8_t LIGHT_SENSOR_PIN = 9;   // A2, digital-capable
-static constexpr uint8_t RELAY_PIN        = 10;  // Free GPIO for relay
-#else
-// ESP32-D (DevKit) default
-static constexpr uint8_t I2C_SDA_PIN      = 33;
-static constexpr uint8_t I2C_SCL_PIN      = 32;
-static constexpr uint8_t SOIL_SENSOR_PIN  = 34;
-static constexpr uint8_t LIGHT_SENSOR_PIN = 35;
-static constexpr uint8_t RELAY_PIN        = 25;
-#endif
+static constexpr uint8_t SOIL_SENSOR_PIN  = 12;  // ADC2 ch11 — soil moisture
+static constexpr uint8_t TANK_SENSOR_PIN  = 11;  // Float switch, INPUT_PULLUP, LOW = tank empty (float down = closed)
+static constexpr uint8_t RELAY_PIN        = 10;  // MOSFET gate: active-HIGH, HIGH = pump ON
 
 // -----------------------------------------------------------------------------
 // WiFi: from WiFiManager (first boot = AP "SmartPlantPro", then from flash).
 // Firebase: from portal (NVS) if user filled the form at 192.168.4.1, else these defaults.
 // Defaults come from firebase_defaults.h (empty) or optional secrets.h (gitignored).
 // -----------------------------------------------------------------------------
-#ifndef HARDWARE_TEST_MODE
 #include "firebase_defaults.h"
 
 #define API_KEY FIREBASE_API_KEY
@@ -99,18 +77,17 @@ FirebaseAuth fbAuth;
 FirebaseConfig fbConfig;
 
 String deviceId;  // WiFi.macAddress()
-#endif  // !HARDWARE_TEST_MODE
 
-#ifndef HARDWARE_TEST_MODE
 // -----------------------------------------------------------------------------
-// Sensor state shared between tasks (normal mode only)
+// Sensor state shared between tasks
 // -----------------------------------------------------------------------------
 struct SensorState {
   float    temperatureC;
   float    pressurePa;
   float    humidity;       // NAN when sensor is BMP280
   uint16_t soilRaw;
-  bool     lightBright;
+  float    lux;            // VEML7700 ambient light in lx (NAN if read fails)
+  bool     tankEmpty;      // true = float switch LOW = tank needs refill
   bool     pumpRunning;
 };
 
@@ -132,6 +109,7 @@ uint8_t    gChipId     = 0;
 
 Adafruit_BMP280 bmp;
 Adafruit_BME280 bme;
+static Adafruit_VEML7700 veml;
 
 // -----------------------------------------------------------------------------
 // Forward declarations
@@ -190,7 +168,6 @@ static void clearBadWiFiAndRestart(const char* reason) {
   delay(2000);
   ESP.restart();
 }
-#endif  // !HARDWARE_TEST_MODE
 
 // -----------------------------------------------------------------------------
 // Setup
@@ -203,15 +180,9 @@ void setup() {
   Serial.println("Smart Plant Pro boot...");
   Serial.flush();
 
-#ifdef HARDWARE_TEST_MODE
-  hardwareTestSetup();
-  return;
-#endif
-
-#ifndef HARDWARE_TEST_MODE
-  // Safety: pump OFF first
+  // Safety: pump OFF first (active-HIGH MOSFET: LOW = pump OFF)
   pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN, HIGH);
+  digitalWrite(RELAY_PIN, LOW);
 
   Serial.println("\n========================================");
   Serial.println("Smart Plant Pro – Firebase RTDB (v2 WiFi-block)");
@@ -360,7 +331,7 @@ void setup() {
   wm.setConnectRetries(1);
   wm.setConnectTimeout(5);
   wm.setSaveConnectTimeout(6);  // Faster redirect after WiFi save
-  wm.setConfigPortalTimeout(0);
+  wm.setConfigPortalTimeout(300);
   wm.setCaptivePortalEnable(true);
   wm.setMinimumSignalQuality(10);  // Accept weaker signals during scan for faster UI
 
@@ -484,6 +455,7 @@ void setup() {
 
   // OTA: upload firmware over WiFi (e.g. PlatformIO: upload_port = <device-IP>, upload_protocol = espota)
   ArduinoOTA.setHostname("SmartPlantPro");
+  ArduinoOTA.setPassword("SmartPlantOTA2024!");
   ArduinoOTA.begin();
   Serial.println("ArduinoOTA ready.");
 
@@ -523,21 +495,13 @@ void setup() {
   xTaskCreatePinnedToCore(taskReadSensors,  "taskReadSensors",  4096, nullptr, 1, nullptr, 0);
   xTaskCreatePinnedToCore(taskFirebaseSync, "taskFirebaseSync", 8192, nullptr, 1, nullptr, 1);
   xTaskCreatePinnedToCore(taskPumpControl,  "taskPumpControl",  4096, nullptr, 1, nullptr, 1);
-#endif  // !HARDWARE_TEST_MODE
 }
 
 void loop() {
-#ifdef HARDWARE_TEST_MODE
-  hardwareTestLoop();
-  return;
-#endif
-#ifndef HARDWARE_TEST_MODE
   ArduinoOTA.handle();
   vTaskDelay(pdMS_TO_TICKS(100));
-#endif
 }
 
-#ifndef HARDWARE_TEST_MODE
 // -----------------------------------------------------------------------------
 // Firebase NVS: load and apply to fbConfig/fbAuth; clear on re-provision
 // -----------------------------------------------------------------------------
@@ -596,6 +560,19 @@ void initializeHardware() {
   Wire.setClock(100000);
   delay(200);
 
+  // I2C bus scan — print all responding addresses for debugging
+  Serial.printf("[I2C] Scanning bus (SDA=%d SCL=%d)...\n", I2C_SDA_PIN, I2C_SCL_PIN);
+  int found = 0;
+  for (uint8_t addr = 1; addr < 127; addr++) {
+    Wire.beginTransmission(addr);
+    if (Wire.endTransmission() == 0) {
+      Serial.printf("[I2C] Device found at 0x%02X\n", addr);
+      found++;
+    }
+  }
+  if (found == 0) Serial.println("[I2C] No devices found — check wiring!");
+  Serial.println();
+
   // Scan I2C for a Bosch sensor at 0x76 or 0x77, read chip ID register 0xD0
   const uint8_t candidates[] = {0x76, 0x77};
   for (uint8_t addr : candidates) {
@@ -641,9 +618,20 @@ void initializeHardware() {
 
   printSensorDiagnostic();
 
-  pinMode(LIGHT_SENSOR_PIN, INPUT_PULLUP);
+  // VEML7700 ambient light sensor (I2C addr 0x10, ADDR pin → GND)
+  if (!veml.begin()) {
+    Serial.println("[HW] VEML7700 not found — check wiring (SDA=8, SCL=9, addr=0x10)");
+  } else {
+    veml.setGain(VEML7700_GAIN_1);
+    veml.setIntegrationTime(VEML7700_IT_100MS);
+    Serial.println("[HW] VEML7700 ready.");
+  }
+
+  // Float switch — tank water level (INPUT_PULLUP: HIGH=water present/float up/open, LOW=tank empty/float down/closed)
+  pinMode(TANK_SENSOR_PIN, INPUT_PULLUP);
   pinMode(SOIL_SENSOR_PIN, INPUT);
-  digitalWrite(RELAY_PIN, HIGH);
+  digitalWrite(RELAY_PIN, LOW);   // active-HIGH MOSFET: LOW = pump OFF
+
 }
 
 // -----------------------------------------------------------------------------
@@ -756,9 +744,10 @@ void taskReadSensors(void *pv) {
       }
     }
 
-    local.soilRaw = analogRead(SOIL_SENSOR_PIN);
-    local.lightBright = (digitalRead(LIGHT_SENSOR_PIN) == LOW);
-    local.pumpRunning = (digitalRead(RELAY_PIN) == LOW);
+    local.soilRaw     = analogRead(SOIL_SENSOR_PIN);
+    local.lux         = veml.readLux();                        // returns NAN on error
+    local.tankEmpty   = (digitalRead(TANK_SENSOR_PIN) == LOW); // LOW = float down = closed = empty
+    local.pumpRunning = (digitalRead(RELAY_PIN) == HIGH);      // HIGH = pump ON for active-HIGH MOSFET
 
     if (xSemaphoreTake(gStateMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
       gState = local;
@@ -844,7 +833,8 @@ void taskFirebaseSync(void *pv) {
         json.set("humidity", s.humidity);
       }
       json.set("soilRaw", s.soilRaw);
-      json.set("lightBright", s.lightBright);
+      if (!isnan(s.lux)) json.set("lux", s.lux);
+      json.set("tk",          s.tankEmpty  ? 1 : 0);
       json.set("pumpRunning", s.pumpRunning);
       json.set("health", healthStatus(s));
       json.set("timestamp", (int)time(nullptr));
@@ -868,9 +858,9 @@ void taskFirebaseSync(void *pv) {
         syncCount++;
         firstPushDone = true;
         if (syncCount <= 5 || syncCount % 20 == 0) {
-          Serial.printf("[Sync] Push #%lu OK | temp=%.1f pres=%.0f hum=%.1f soil=%u light=%d ts=%d\n",
+          Serial.printf("[Sync] Push #%lu OK | temp=%.1f pres=%.0f hum=%.1f soil=%u lux=%.1f tank=%d ts=%d\n",
             syncCount, s.temperatureC, s.pressurePa, s.humidity,
-            s.soilRaw, s.lightBright, (int)time(nullptr));
+            s.soilRaw, s.lux, s.tankEmpty ? 1 : 0, (int)time(nullptr));
         }
       }
       // So the app can list "available" devices and show online status
@@ -916,8 +906,9 @@ void taskFirebaseSync(void *pv) {
         if (!isnan(s.pressurePa))   hj.set("p", s.pressurePa);
         if (!isnan(s.humidity))     hj.set("h", s.humidity);
         hj.set("s", s.soilRaw);
-        hj.set("l", s.lightBright ? 1 : 0);
+        if (!isnan(s.lux)) hj.set("l", s.lux);  // float lux value
         hj.set("pu", s.pumpRunning ? 1 : 0);
+        hj.set("tk", s.tankEmpty   ? 1 : 0);
         Firebase.RTDB.setJSON(&fbClient, histPath.c_str(), &hj);
       }
 
@@ -1007,7 +998,7 @@ bool fetchPumpRequest() {
 // Task: Pump control (Core 0) – pulse watering on pumpRequest
 // -----------------------------------------------------------------------------
 void updateRelay(bool on) {
-  digitalWrite(RELAY_PIN, on ? LOW : HIGH);
+  digitalWrite(RELAY_PIN, on ? HIGH : LOW);  // active-HIGH MOSFET: HIGH = pump ON
 }
 
 uint16_t fetchTargetSoil() {
@@ -1017,6 +1008,7 @@ uint16_t fetchTargetSoil() {
     int val = ok ? fbClient.intData() : -1;
     xSemaphoreGive(gFirebaseMutex);
     if (ok && val >= 0) {
+      if (val < 0 || val > 4095) return 2800;  // Reject corrupt/malicious value
       return static_cast<uint16_t>(val);
     }
   }
@@ -1074,7 +1066,7 @@ void taskScheduleCheck() {
 
   time_t now = time(nullptr);
   if (now < 1000000000L) return;  // NTP not synced
-  struct tm* lt = localtime(&now);
+  struct tm tmBuf; struct tm* lt = &tmBuf; localtime_r(&now, &tmBuf);
   int nowHour = lt->tm_hour;
   int nowMin = lt->tm_min;
 
@@ -1113,7 +1105,7 @@ void updateScheduleAfterWater(int durationSec, uint16_t soilBefore, uint16_t soi
   time_t now = time(nullptr);
   if (now < 1000000000L) return;
 
-  struct tm* lt = localtime(&now);
+  struct tm tmBuf; struct tm* lt = &tmBuf; localtime_r(&now, &tmBuf);
   char todayBuf[16];
   snprintf(todayBuf, sizeof(todayBuf), "%04d-%02d-%02d", lt->tm_year + 1900, lt->tm_mon + 1, lt->tm_mday);
 
@@ -1124,6 +1116,7 @@ void updateScheduleAfterWater(int durationSec, uint16_t soilBefore, uint16_t soi
     // todaySeconds: we need to add durationSec. First fetch current.
     bool ok = Firebase.RTDB.getInt(&fbClient, (base + "todaySeconds").c_str());
     int cur = ok ? fbClient.intData() : 0;
+    if (cur < 0 || cur > 86400) cur = 0;
     Firebase.RTDB.setInt(&fbClient, (base + "todaySeconds").c_str(), cur + durationSec);
     xSemaphoreGive(gFirebaseMutex);
   }
@@ -1153,12 +1146,44 @@ void taskPumpControl(void *pv) {
       continue;
     }
 
+    unsigned long pumpStartMs = millis();
+
     uint16_t target = fetchTargetSoil();
 
     SensorState s{};
     if (xSemaphoreTake(gStateMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
       s = gState;
       xSemaphoreGive(gStateMutex);
+    }
+
+    // Tank empty guard: refuse to run pump if water tank is empty
+    if (s.tankEmpty) {
+      updateRelay(false);
+      gPumpRequest = false;
+      // Alert (debounced to once per hour)
+      static int lastTankAlertTs = 0;
+      int nowTs = (int)time(nullptr);
+      if (nowTs - lastTankAlertTs > 3600) {
+        lastTankAlertTs = nowTs;
+        String alertPath = "devices/" + deviceId + "/alerts/lastAlert";
+        FirebaseJson alertJson;
+        alertJson.set("timestamp", nowTs);
+        alertJson.set("type", "tank_empty");
+        alertJson.set("message", "Water tank empty — refill needed");
+        if (xSemaphoreTake(gFirebaseMutex, pdMS_TO_TICKS(500)) == pdTRUE) {
+          Firebase.RTDB.updateNode(&fbClient, alertPath.c_str(), &alertJson);
+          xSemaphoreGive(gFirebaseMutex);
+        }
+      }
+      vTaskDelay(PUMP_IDLE_MS);
+      continue;
+    }
+
+    if (millis() - pumpStartMs > 60000UL) { /* 60 second max */
+      updateRelay(false);
+      Serial.println("[Pump] TIMEOUT: max runtime exceeded");
+      gPumpRequest = false;
+      break;
     }
 
     if (s.soilRaw <= target) {
@@ -1197,6 +1222,5 @@ void taskPumpControl(void *pv) {
     }
   }
 }
-#endif  // !HARDWARE_TEST_MODE
 
 // (Stream callbacks removed — using polling to avoid FreeRTOS mutex crash)

@@ -13,18 +13,19 @@
 #include "secrets.h"
 #endif
 
+// All values must be provisioned via WiFiManager portal or src/secrets.h
 #ifndef FIREBASE_API_KEY
-#define FIREBASE_API_KEY "AIzaSyCZBClU2J2bV9b3Tm9uvuPteQhNF0nwJQ4"
+#define FIREBASE_API_KEY ""
 #endif
 
 #ifndef FIREBASE_DB_URL
-#define FIREBASE_DB_URL "https://esw-plantmonitor-default-rtdb.firebaseio.com"
+#define FIREBASE_DB_URL ""
 #endif
 
 #ifndef FIREBASE_USER_EMAIL
-#define FIREBASE_USER_EMAIL "deepakroshan73@gmail.com"
+#define FIREBASE_USER_EMAIL ""
 #endif
 
 #ifndef FIREBASE_USER_PASSWORD
-#define FIREBASE_USER_PASSWORD "123456"
+#define FIREBASE_USER_PASSWORD ""
 #endif

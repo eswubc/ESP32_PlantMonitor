@@ -6,6 +6,11 @@ import type { HistoryRow } from '../types'
 
 const TZ = 'America/Los_Angeles'
 
+function safeCellValue(val: string): string {
+  if (typeof val === 'string' && /^[=+\-@]/.test(val)) return `'${val}`
+  return val
+}
+
 function epochToLabel(epoch: number): string {
   const zoned = toZonedTime(new Date(epoch * 1000), TZ)
   return format(zoned, 'MMM d yyyy, h:mm a')
@@ -18,8 +23,9 @@ function buildRawDataSheet(ws: ExcelJS.Worksheet, rows: HistoryRow[]): void {
     { header: 'Pressure (hPa)',      key: 'pressure', width: 14 },
     { header: 'Humidity (%)',        key: 'humidity', width: 14 },
     { header: 'Soil Raw (0–4095)',   key: 'soil',     width: 16 },
-    { header: 'Light',               key: 'light',    width: 10 },
+    { header: 'Light (lx)',          key: 'light',    width: 12 },
     { header: 'Pump',                key: 'pump',     width: 10 },
+    { header: 'Tank',                key: 'tank',     width: 10 },
     { header: 'Notes',               key: 'notes',    width: 20 },
   ]
 
@@ -28,14 +34,15 @@ function buildRawDataSheet(ws: ExcelJS.Worksheet, rows: HistoryRow[]): void {
 
   rows.forEach((row, i) => {
     const dataRow = ws.addRow({
-      ts:       epochToLabel(row.epoch),
+      ts:       safeCellValue(epochToLabel(row.epoch)),
       temp:     isNaN(row.t) ? '' : Math.round(row.t * 10) / 10,
       pressure: Math.round(row.p / 100 * 10) / 10,
       humidity: row.h == null || isNaN(row.h) ? '' : Math.round(row.h * 10) / 10,
       soil:     row.s,
-      light:    row.l === 1 ? 'Bright' : 'Dim',
-      pump:     row.pu === 1 ? 'ON' : 'OFF',
-      notes:    '',
+      light:    isNaN(row.lux) ? '' : Math.round(row.lux),
+      pump:     safeCellValue(row.pu === 1 ? 'ON' : 'OFF'),
+      tank:     safeCellValue(row.tk === 1 ? 'Empty' : 'Full'),
+      notes:    safeCellValue(''),
     })
 
     if (i % 2 === 0) {
@@ -107,16 +114,16 @@ async function buildChartsSheet(ws: ExcelJS.Worksheet, workbook: ExcelJS.Workboo
   const humData   = rows.map(r => r.h == null ? 0 : Math.round(r.h * 10) / 10)
   const soilData  = rows.map(r => r.s)
   const presData  = rows.map(r => Math.round(r.p / 100 * 10) / 10)
-  const lightData = rows.map(r => r.l)
+  const luxData   = rows.map(r => isNaN(r.lux) ? 0 : r.lux)
   const pumpData  = rows.map(r => r.pu)
 
   const charts: Array<{ data: number[], title: string, yLabel: string, stepped: boolean }> = [
-    { data: tempData,  title: 'Temperature over Time',   yLabel: '°C',              stepped: false },
-    { data: humData,   title: 'Humidity over Time',      yLabel: '%',               stepped: false },
-    { data: soilData,  title: 'Soil Moisture over Time', yLabel: 'ADC (0–4095)',    stepped: false },
-    { data: presData,  title: 'Pressure over Time',      yLabel: 'hPa',             stepped: false },
-    { data: lightData, title: 'Light Level over Time',   yLabel: '1=Bright, 0=Dim', stepped: true  },
-    { data: pumpData,  title: 'Pump Activity over Time', yLabel: '1=ON, 0=OFF',     stepped: true  },
+    { data: tempData,  title: 'Temperature over Time',   yLabel: '°C',           stepped: false },
+    { data: humData,   title: 'Humidity over Time',      yLabel: '%',            stepped: false },
+    { data: soilData,  title: 'Soil Moisture over Time', yLabel: 'ADC (0–4095)', stepped: false },
+    { data: presData,  title: 'Pressure over Time',      yLabel: 'hPa',          stepped: false },
+    { data: luxData,   title: 'Light Level over Time',   yLabel: 'lx',           stepped: false },
+    { data: pumpData,  title: 'Pump Activity over Time', yLabel: '1=ON, 0=OFF',  stepped: true  },
   ]
 
   let rowOffset = 2
