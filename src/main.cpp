@@ -29,7 +29,7 @@
 static constexpr uint8_t I2C_SDA_PIN      = 5;   // ADC1-safe
 static constexpr uint8_t I2C_SCL_PIN      = 9;
 static constexpr uint8_t SOIL_SENSOR_PIN  = 12;  // ADC2 ch11 — soil moisture
-static constexpr uint8_t TANK_SENSOR_PIN  = 11;  // Float switch, INPUT_PULLUP, LOW = tank empty
+static constexpr uint8_t TANK_SENSOR_PIN  = 11;  // Float switch, INPUT_PULLUP, LOW = tank empty (float down = closed)
 static constexpr uint8_t RELAY_PIN        = 10;  // MOSFET gate: active-HIGH, HIGH = pump ON
 
 // -----------------------------------------------------------------------------
@@ -627,7 +627,7 @@ void initializeHardware() {
     Serial.println("[HW] VEML7700 ready.");
   }
 
-  // Float switch — tank water level (INPUT_PULLUP: HIGH=water present, LOW=tank empty)
+  // Float switch — tank water level (INPUT_PULLUP: HIGH=water present/float up/open, LOW=tank empty/float down/closed)
   pinMode(TANK_SENSOR_PIN, INPUT_PULLUP);
   pinMode(SOIL_SENSOR_PIN, INPUT);
   digitalWrite(RELAY_PIN, LOW);   // active-HIGH MOSFET: LOW = pump OFF
@@ -746,7 +746,7 @@ void taskReadSensors(void *pv) {
 
     local.soilRaw     = analogRead(SOIL_SENSOR_PIN);
     local.lux         = veml.readLux();                        // returns NAN on error
-    local.tankEmpty   = (digitalRead(TANK_SENSOR_PIN) == LOW); // LOW = float down = empty
+    local.tankEmpty   = (digitalRead(TANK_SENSOR_PIN) == LOW); // LOW = float down = closed = empty
     local.pumpRunning = (digitalRead(RELAY_PIN) == HIGH);      // HIGH = pump ON for active-HIGH MOSFET
 
     if (xSemaphoreTake(gStateMutex, pdMS_TO_TICKS(50)) == pdTRUE) {

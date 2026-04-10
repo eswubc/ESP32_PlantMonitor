@@ -1,0 +1,139 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1775795567583,
+  "projectRoot": "/Users/deepak/Documents/PlatformIO/Projects/ESP32_PlantMonitor/.claude/worktrees/musing-robinson",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      }
+    ],
+    "frameworks": [],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs",
+      "src"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 4,
+      "lastAccessed": 1775795567001,
+      "keyFiles": [
+        "HARDWARE.md",
+        "SYSTEM.md",
+        "developer-guide.md",
+        "user-manual.md"
+      ]
+    },
+    "frontend": {
+      "path": "frontend",
+      "purpose": null,
+      "fileCount": 16,
+      "lastAccessed": 1775795567001,
+      "keyFiles": [
+        "README.md",
+        "ROTATING_TEXT_INTEGRATION.md",
+        "SCROLL_STACK_INTEGRATION.md",
+        "eslint.config.js",
+        "index.html"
+      ]
+    },
+    "include": {
+      "path": "include",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1775795567001,
+      "keyFiles": [
+        "AudioLogger.h",
+        "AudioOutput.h",
+        "AudioStatus.h"
+      ]
+    },
+    "partitions": {
+      "path": "partitions",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775795567001,
+      "keyFiles": [
+        "rainmaker.csv"
+      ]
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 5,
+      "lastAccessed": 1775795567001,
+      "keyFiles": [
+        "firebase_defaults.h",
+        "hardware_test_mode.cpp",
+        "hardware_test_mode.h",
+        "main.cpp",
+        "secrets.h.example"
+      ]
+    },
+    "frontend/dist": {
+      "path": "frontend/dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 8,
+      "lastAccessed": 1775795567002,
+      "keyFiles": [
+        "index.html",
+        "manifest.json",
+        "manifest.webmanifest"
+      ]
+    },
+    "frontend/node_modules": {
+      "path": "frontend/node_modules",
+      "purpose": "Dependencies",
+      "fileCount": 1,
+      "lastAccessed": 1775795567003,
+      "keyFiles": []
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "src/main.cpp",
+      "accessCount": 7,
+      "lastAccessed": 1775795741715,
+      "type": "file"
+    },
+    {
+      "path": "docs/FIRMWARE_DEEP_DIVE.md",
+      "accessCount": 1,
+      "lastAccessed": 1775795872469,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}
